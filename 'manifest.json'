@@ -2,13 +2,13 @@
   "name": "MyDay2Day Planner",
   "short_name": "MyDay2Day",
   "description": "My calm daily planner app for journalling, tasks and gratitude.",
-  "start_url": "/",
+  "start_url": "/MyDay2Day/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/D2Dlogo.png",
+      "src": "D2Dlogo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
