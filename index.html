@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyDay2Day</title>
-  <link rel="manifest" href="manifest.json">
-	<script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap');
@@ -154,7 +153,7 @@
     onclick="showSection('today')"
   >
     <img
-      src="D2Dlogo.png"
+      src="myday2day-logo.png"
       alt="MyDay2Day"
       class="header-logo"
     >
@@ -192,6 +191,15 @@
             <path d="M12 20s-5.5-3.1-8-6.4C2 11 2 8.5 3.5 7 5 5.5 7.5 5.5 9 7l3 3 3-3c1.5-1.5 4-1.5 5.5 0C22 8.5 22 11 20 13.6 17.5 16.9 12 20 12 20z" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span>Gratitude</span>
+</button>
+<button onclick="showSection('calendar')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="calendar">
+  <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <rect x="3" y="5" width="18" height="16" rx="2" ry="2"></rect>
+    <line x1="3" y1="9" x2="21" y2="9"></line>
+    <line x1="9" y1="3" x2="9" y2="7"></line>
+    <line x1="15" y1="3" x2="15" y2="7"></line>
+  </svg>
+  <span>Calendar</span>
         </button>
         <button onclick="showSection('settings')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="settings">
           <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -431,6 +439,18 @@
       <div id="gratitude-entries" class="space-y-4 mt-6 text-sm"></div>
     </div>
 
+<!-- CALENDAR TAB -->
+<div id="calendar-section" class="section hidden max-w-md mx-auto p-4">
+  <div class="glass-card rounded-3xl p-6">
+    <h2 class="text-2xl luxury-logo mb-1">Calendar</h2>
+    <p class="text-xs text-white/60 mb-4">
+      A timeline of your tasks, journal and gratitude entries.
+    </p>
+    <div id="calendar-entries" class="space-y-4 text-sm max-h-[60vh] overflow-y-auto pr-1"></div>
+  </div>
+</div>
+
+
     <!-- SETTINGS TAB -->
     <div id="settings-section" class="section hidden max-w-md mx-auto p-4">
       <div class="space-y-6 pb-24">
@@ -572,16 +592,15 @@
       return new Date().toISOString().slice(0, 10);
     }
 
-  function defaultFolders() {
-  // No more Inbox folder by default
-  return [
-    { id: 'work',     name: 'Work',     builtin: true },
-    { id: 'home',     name: 'Home',     builtin: true },
-    { id: 'health',   name: 'Health',   builtin: true },
-    { id: 'learning', name: 'Learning', builtin: true }
-  ];
-}
-
+    function defaultFolders() {
+      return [
+        { id: 'inbox',    name: 'Inbox',    builtin: true },
+        { id: 'work',     name: 'Work',     builtin: true },
+        { id: 'home',     name: 'Home',     builtin: true },
+        { id: 'health',   name: 'Health',   builtin: true },
+        { id: 'learning', name: 'Learning', builtin: true }
+      ];
+    }
 
 	function getDefaultJournalTemplates() {
  	 return [
@@ -631,37 +650,53 @@
       rewardText = storedRewardText || rewardText;
 
       const storedFolders = localStorage.getItem('mydayfolders');
-folders = storedFolders ? JSON.parse(storedFolders) : defaultFolders();
-
-// Remove any old Inbox folder from the folders list
-folders = folders.filter(f => f.id !== 'inbox');
-
-const storedFolderId = localStorage.getItem('mydaycurrentfolder');
-currentFolderId = storedFolderId || 'all';
-
-// If we previously saved "inbox" as the current folder, fall back to "all"
-if (currentFolderId === 'inbox' || !folders.find(f => f.id === currentFolderId) && currentFolderId !== 'all') {
-  currentFolderId = 'all';
-}
-
+      folders = storedFolders ? JSON.parse(storedFolders) : defaultFolders();
+      const storedFolderId = localStorage.getItem('mydaycurrentfolder');
+      currentFolderId = storedFolderId || 'inbox';
+      if (currentFolderId !== 'all' && !folders.find(f => f.id === currentFolderId)) {
+        currentFolderId = 'inbox';
+      }
 
       const storedTasks = localStorage.getItem('mydaytasks');
-      if (storedTasks) {
-        tasks = JSON.parse(storedTasks);
-      } else {
-        tasks = [
-          { text: "Complete project proposal", xp: 30, done: false, priority: true, folderId: 'work' },
-          { text: "Morning workout", xp: 15, done: false, priority: true, folderId: 'health' }
-        ];
-      }
-tasks.forEach(t => { if (!t.folderId || t.folderId === 'inbox') t.folderId = 'home'; });
+if (storedTasks) {
+  tasks = JSON.parse(storedTasks);
+} else {
+  tasks = [
+    { text: "Complete project proposal", xp: 30, done: false, priority: true, folderId: 'work' },
+    { text: "Morning workout", xp: 15, done: false, priority: true, folderId: 'health' }
+  ];
+}
+tasks.forEach(t => {
+  if (!t.folderId) t.folderId = 'inbox';
+  if (!t.createdIsoDate) t.createdIsoDate = todayStr();
+  // Optional: if a task is already done, give it a completion date if missing
+  if (t.done && !t.completedIsoDate) t.completedIsoDate = todayStr();
+});
 
 
-            const storedJournal = localStorage.getItem('mydayjournal');
-      journalEntries = storedJournal ? JSON.parse(storedJournal) : [];
+const storedJournal = localStorage.getItem('mydayjournal');
+journalEntries = storedJournal ? JSON.parse(storedJournal) : [];
 
-      const storedGratitude = localStorage.getItem('mydaygratitude');
-      gratitudeEntries = storedGratitude ? JSON.parse(storedGratitude) : [];
+// Ensure each journal entry has an id, nice date and isoDate
+journalEntries = journalEntries.map(e => ({
+  id: e.id || ('jr_' + Date.now() + '_' + Math.random().toString(36).slice(2)),
+  date: e.date || formatNiceDate(),
+  isoDate: e.isoDate || todayStr(),
+  text: e.text || ''
+}));
+
+const storedGratitude = localStorage.getItem('mydaygratitude');
+gratitudeEntries = storedGratitude ? JSON.parse(storedGratitude) : [];
+
+// Ensure each gratitude entry has an id, nice date and isoDate
+gratitudeEntries = gratitudeEntries.map(e => ({
+  id: e.id || ('gr_' + Date.now() + '_' + Math.random().toString(36).slice(2)),
+  date: e.date || formatNiceDate(),
+  isoDate: e.isoDate || todayStr(),
+  text: e.text || ''
+}));
+
+
 
 
            const storedJournalTemplates = localStorage.getItem('mydayjournaltemplates');
@@ -725,6 +760,7 @@ if (storedJournalTemplates) {
       updateStats();
       renderFolders();
       renderTasks();
+      renderCalendar();
       renderJournal();
       renderJournalTemplatesList();
       renderGratitude();
@@ -733,6 +769,7 @@ if (storedJournalTemplates) {
       updateHomeStats();
       updateRewardUI();
       maybeShowRewardFireworks();
+
 
     }
 
@@ -1071,19 +1108,16 @@ function addJournalTemplateFromTextarea() {
         </button>
       `);
 
-       folders.forEach(f => {
-    if (f.id === 'inbox') return; // hide any legacy Inbox folder
-
-    chips.push(`
-      <button
-        class="px-3 py-1.5 rounded-2xl border text-[11px] whitespace-nowrap ${currentFolderId === f.id ? 'bg-lime-400 text-black border-lime-300' : 'bg-black/40 border-white/20 text-white/80'}"
-        onclick="setCurrentFolder('${f.id}')"
-      >
-        ${f.name}
-      </button>
-    `);
-  });
-
+      folders.forEach(f => {
+        chips.push(`
+          <button
+            class="px-3 py-1.5 rounded-2xl border text-[11px] whitespace-nowrap ${currentFolderId === f.id ? 'bg-lime-400 text-black border-lime-300' : 'bg-black/40 border-white/20 text-white/80'}"
+            onclick="setCurrentFolder('${f.id}')"
+          >
+            ${f.name}
+          </button>
+        `);
+      });
 
       container.innerHTML = chips.join('');
     }
@@ -1138,7 +1172,7 @@ function addJournalTemplateFromTextarea() {
       if (!confirm(`Delete folder "${folder.name}" and all its tasks?`)) return;
       tasks = tasks.filter(t => t.folderId !== currentFolderId);
       folders = folders.filter(f => f.id !== currentFolderId);
-       currentFolderId = 'all';
+      currentFolderId = 'inbox';
       saveData();
       renderFolders();
       renderTasks(document.getElementById('task-filter').value || 'all');
@@ -1210,42 +1244,50 @@ function addJournalTemplateFromTextarea() {
       renderTasks(document.getElementById('task-filter').value);
     }
 
+    function addTask() {
+      const text = document.getElementById('new-task').value.trim();
+      if (!text) return;
+      const xpVal    = parseInt(document.getElementById('new-task-xp').value) || 10;
+      const priority = document.getElementById('new-task-priority').checked;
+      const folderIdForTask = currentFolderId === 'all' ? 'inbox' : currentFolderId;
+     tasks.unshift({
+  text,
+  xp: xpVal,
+  done: false,
+  priority,
+  folderId: folderIdForTask,
+  createdIsoDate: todayStr(),
+  completedIsoDate: null
+});
 
-function addTask() {
-  const text = document.getElementById('new-task').value.trim();
-  if (!text) return;
-  const xpVal    = parseInt(document.getElementById('new-task-xp').value) || 10;
-  const priority = document.getElementById('new-task-priority').checked;
-
-  // When you are on "All", put new tasks into the Home folder by default
-  let folderIdForTask = currentFolderId;
-  if (folderIdForTask === 'all') {
-    const homeFolder = folders.find(f => f.id === 'home');
-    folderIdForTask = homeFolder ? homeFolder.id : (folders[0] ? folders[0].id : 'home');
-  }
-
-  tasks.unshift({ text, xp: xpVal, done: false, priority, folderId: folderIdForTask });
-  document.getElementById('new-task').value = '';
-  document.getElementById('new-task-priority').checked = false;
-  renderTasks(document.getElementById('task-filter').value || 'all');
-  renderMITs();
-  registerEngagement();
-  saveData();
-  updateHomeStats();
-}
-
-
-    function toggleTask(i) {
-      if (!tasks[i].done) {
-        addXP(tasks[i].xp, true);
-      } else {
-        saveData();
-      }
-      tasks[i].done = !tasks[i].done;
+      document.getElementById('new-task').value = '';
+      document.getElementById('new-task-priority').checked = false;
       renderTasks(document.getElementById('task-filter').value || 'all');
       renderMITs();
+      registerEngagement();
+      saveData();
       updateHomeStats();
     }
+
+    function toggleTask(i) {
+  const wasDone = tasks[i].done;
+
+  if (!wasDone) {
+    addXP(tasks[i].xp, true);
+    tasks[i].done = true;
+    tasks[i].completedIsoDate = todayStr();
+  } else {
+    tasks[i].done = false;
+    tasks[i].completedIsoDate = null;
+    saveData();
+  }
+
+  renderTasks(document.getElementById('task-filter').value || 'all');
+  renderMITs();
+  updateHomeStats();
+  renderCalendar();   // refresh
+}
+
 
     function renderMITs() {
       const container = document.getElementById('mit-list');
@@ -1332,28 +1374,219 @@ function addTask() {
     }
 
     function renderJournal() {
-      const container = document.getElementById('journal-entries');
-      if (!container) return;
-      container.innerHTML = journalEntries.length === 0
-        ? `<p class="text-white/50 text-center py-12 text-sm">No entries yet.</p>`
-        : journalEntries.map(e => `
-          <div class="glass-card rounded-3xl p-5 text-sm">
-            <div class="text-xs text-lime-300">${e.date}</div>
-            <p class="mt-3 whitespace-pre-line">${e.text}</p>
-          </div>`).join('');
-    }
+  const container = document.getElementById('journal-entries');
+  if (!container) return;
+
+  if (!journalEntries || journalEntries.length === 0) {
+    container.innerHTML = `<p class="text-white/50 text-center py-12 text-sm">No entries yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = journalEntries.map(e => `
+    <div class="glass-card rounded-3xl p-5 text-sm">
+      <div class="flex items-baseline justify-between gap-3">
+        <div class="text-xs text-lime-300">${e.date}</div>
+        <div class="flex gap-2 text-[11px]">
+          <button
+            class="px-2 py-1 rounded-2xl border border-white/30"
+            onclick="editJournalEntry('${e.id}')"
+          >
+            Edit
+          </button>
+          <button
+            class="px-2 py-1 rounded-2xl border border-red-400/70 text-red-200"
+            onclick="deleteJournalEntry('${e.id}')"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      <p class="mt-3 whitespace-pre-line">${e.text}</p>
+    </div>
+  `).join('');
+}
+
 
     function renderGratitude() {
-      const container = document.getElementById('gratitude-entries');
-      if (!container) return;
-      container.innerHTML = gratitudeEntries.length === 0
-        ? `<p class="text-white/50 text-center py-12 text-sm">No entries yet.</p>`
-        : gratitudeEntries.map(e => `
-          <div class="glass-card rounded-3xl p-5 text-sm">
-            <div class="text-xs text-amber-300">${e.date}</div>
-            <p class="mt-3 whitespace-pre-line">${e.text}</p>
-          </div>`).join('');
+  const container = document.getElementById('gratitude-entries');
+  if (!container) return;
+
+  if (!gratitudeEntries || gratitudeEntries.length === 0) {
+    container.innerHTML = `<p class="text-white/50 text-center py-12 text-sm">No entries yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = gratitudeEntries.map(e => `
+    <div class="glass-card rounded-3xl p-5 text-sm">
+      <div class="flex items-baseline justify-between gap-3">
+        <div class="text-xs text-amber-300">${e.date}</div>
+        <div class="flex gap-2 text-[11px]">
+          <button
+            class="px-2 py-1 rounded-2xl border border-white/30"
+            onclick="editGratitudeEntry('${e.id}')"
+          >
+            Edit
+          </button>
+          <button
+            class="px-2 py-1 rounded-2xl border border-red-400/70 text-red-200"
+            onclick="deleteGratitudeEntry('${e.id}')"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      <p class="mt-3 whitespace-pre-line">${e.text}</p>
+    </div>
+  `).join('');
+}
+
+function editJournalEntry(id) {
+  const entry = journalEntries.find(e => e.id === id);
+  if (!entry) return;
+
+  const updated = prompt("Edit your journal entry:", entry.text);
+  if (updated === null) return; // user cancelled
+
+  entry.text = updated.trim();
+  saveData();
+  renderJournal();
+}
+
+function deleteJournalEntry(id) {
+  const entry = journalEntries.find(e => e.id === id);
+  if (!entry) return;
+
+  if (!confirm("Delete this journal entry?")) return;
+  journalEntries = journalEntries.filter(e => e.id !== id);
+  saveData();
+  renderJournal();
+}
+
+function editGratitudeEntry(id) {
+  const entry = gratitudeEntries.find(e => e.id === id);
+  if (!entry) return;
+
+  const updated = prompt("Edit your gratitude entry:", entry.text);
+  if (updated === null) return;
+
+  entry.text = updated.trim();
+  saveData();
+  renderGratitude();
+}
+
+function deleteGratitudeEntry(id) {
+  const entry = gratitudeEntries.find(e => e.id === id);
+  if (!entry) return;
+
+  if (!confirm("Delete this gratitude entry?")) return;
+  gratitudeEntries = gratitudeEntries.filter(e => e.id !== id);
+  saveData();
+  renderGratitude();
+}
+
+function buildCalendarItems() {
+  const itemsByDate = {};
+
+  function addItem(isoDate, item) {
+    if (!itemsByDate[isoDate]) itemsByDate[isoDate] = [];
+    itemsByDate[isoDate].push(item);
+  }
+
+  // Journal entries
+  journalEntries.forEach(e => {
+    addItem(e.isoDate || todayStr(), {
+      type: 'Journal',
+      label: 'Journal entry',
+      text: e.text,
+      colourClass: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/60'
+    });
+  });
+
+  // Gratitude entries
+  gratitudeEntries.forEach(e => {
+    addItem(e.isoDate || todayStr(), {
+      type: 'Gratitude',
+      label: 'Gratitude entry',
+      text: e.text,
+      colourClass: 'bg-amber-500/20 text-amber-200 border-amber-400/60'
+    });
+  });
+
+  // Tasks: created + completed
+  tasks.forEach(t => {
+    const createdDate = t.createdIsoDate || todayStr();
+    addItem(createdDate, {
+      type: 'Task',
+      label: t.priority ? 'Task created (priority)' : 'Task created',
+      text: t.text,
+      colourClass: 'bg-sky-500/15 text-sky-200 border-sky-400/60'
+    });
+
+    if (t.done && t.completedIsoDate) {
+      addItem(t.completedIsoDate, {
+        type: 'Task done',
+        label: t.priority ? 'Task completed (priority)' : 'Task completed',
+        text: t.text,
+        colourClass: 'bg-lime-500/20 text-lime-100 border-lime-400/70'
+      });
     }
+  });
+
+  return itemsByDate;
+}
+
+function formatIsoToNice(iso) {
+  const [y, m, d] = iso.split('-').map(n => parseInt(n, 10));
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function renderCalendar() {
+  const container = document.getElementById('calendar-entries');
+  if (!container) return;
+
+  const itemsByDate = buildCalendarItems();
+  const dates = Object.keys(itemsByDate);
+
+  if (dates.length === 0) {
+    container.innerHTML = `<p class="text-white/50 text-center py-12 text-sm">No activity yet.</p>`;
+    return;
+  }
+
+  // Sort newest first
+  dates.sort((a, b) => (a < b ? 1 : -1));
+
+  container.innerHTML = dates.map(iso => {
+    const niceDate = formatIsoToNice(iso);
+    const items = itemsByDate[iso];
+
+    const entriesHtml = items.map(item => `
+      <div class="flex gap-3 items-start">
+        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
+          ${item.type}
+        </span>
+        <div class="flex-1">
+          <div class="text-[11px] text-white/60 mb-1">${item.label}</div>
+          <p class="whitespace-pre-line text-sm text-white/90">${item.text}</p>
+        </div>
+      </div>
+    `).join('<div class="h-2"></div>');
+
+    return `
+      <div>
+        <div class="text-xs tracking-[0.14em] uppercase text-white/60 mb-2">${niceDate}</div>
+        <div class="space-y-2">
+          ${entriesHtml}
+        </div>
+      </div>
+    `;
+  }).join('<div class="border-t border-white/10 my-3"></div>');
+}
+
 
     function renderTemplateSelectors() {
       const journalSelect = document.getElementById('journal-template-select');
@@ -1458,6 +1691,71 @@ function addTask() {
       renderTemplateSelectors();
       select.value = "";
     }
+
+
+function formatNiceDate() {
+  const d = new Date();
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function saveJournalEntry() {
+  const area = document.getElementById('journal-input');
+  if (!area) return;
+
+  const text = area.value.trim();
+  if (!text) {
+    alert("Write something in your journal before saving.");
+    return;
+  }
+
+  const todayIso = todayStr();
+
+  const entry = {
+    id: 'jr_' + Date.now(),
+    date: formatNiceDate(),
+    isoDate: todayIso,
+    text
+  };
+
+  journalEntries.unshift(entry);
+  addXP(10, true);
+  renderJournal();
+  saveData();
+  renderCalendar();    // <– refresh calendar
+  area.value = "";
+}
+
+function saveGratitudeEntry() {
+  const area = document.getElementById('gratitude-input');
+  if (!area) return;
+
+  const text = area.value.trim();
+  if (!text) {
+    alert("Write something you are grateful for before saving.");
+    return;
+  }
+
+  const todayIso = todayStr();
+
+  const entry = {
+    id: 'gr_' + Date.now(),
+    date: formatNiceDate(),
+    isoDate: todayIso,
+    text
+  };
+
+  gratitudeEntries.unshift(entry);
+  addXP(10, true);
+  renderGratitude();
+  saveData();
+  renderCalendar();    // <– refresh calendar
+  area.value = "";
+}
+
 
 
     function saveRewardText() {
