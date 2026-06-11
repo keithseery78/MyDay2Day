@@ -109,6 +109,51 @@
       color: #166534;
     }
 
+/* Stronger tag colours in light mode (journal / gratitude / tasks) */
+body.theme-light .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.18); /* journal */
+  color: #065f46;
+  border-color: #16a34a;
+}
+
+body.theme-light .bg-amber-500\/20 {
+  background-color: rgba(245, 158, 11, 0.18); /* gratitude */
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+body.theme-light .bg-sky-500\/15 {
+  background-color: rgba(56, 189, 248, 0.18); /* task created */
+  color: #0c4a6e;
+  border-color: #0ea5e9;
+}
+
+body.theme-light .bg-lime-500\/20 {
+  background-color: rgba(132, 204, 22, 0.20); /* task done */
+  color: #365314;
+  border-color: #84cc16;
+}
+
+/* Fix template modal contrast in light mode */
+body.theme-light #reflection-templates-modal {
+  color: #e5e7eb; /* default text inside modal = light */
+}
+
+body.theme-light #reflection-templates-modal .bg-black\/40 {
+  background-color: rgba(15,23,42,0.85); /* keep dark card */
+  border-color: rgba(148,163,184,0.6);
+}
+
+body.theme-light #reflection-templates-modal button {
+  color: #e5e7eb;
+}
+
+body.theme-light #reflection-templates-modal .text-white\/50,
+body.theme-light #reflection-templates-modal .text-white\/60,
+body.theme-light #reflection-templates-modal .text-white\/70 {
+  color: #e5e7eb;
+}
+
     /* Fireworks overlay */
     #fireworks-overlay {
       position: fixed;
