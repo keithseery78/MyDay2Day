@@ -444,11 +444,46 @@
   <div class="glass-card rounded-3xl p-6">
     <h2 class="text-2xl luxury-logo mb-1">Calendar</h2>
     <p class="text-xs text-white/60 mb-4">
-      A timeline of your tasks, journal and gratitude entries.
+      Tap a day to see your tasks, journal and gratitude entries.
     </p>
-    <div id="calendar-entries" class="space-y-4 text-sm max-h-[60vh] overflow-y-auto pr-1"></div>
+
+    <!-- Month header -->
+    <div class="flex items-center justify-between mb-3 text-sm">
+      <button
+        class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
+        onclick="changeCalendarMonth(-1)"
+      >
+        ◀
+      </button>
+      <div id="calendar-month-label" class="font-medium"></div>
+      <button
+        class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
+        onclick="changeCalendarMonth(1)"
+      >
+        ▶
+      </button>
+    </div>
+
+    <!-- Weekdays -->
+    <div class="grid grid-cols-7 text-[11px] text-white/60 mb-1">
+      <div class="text-center">Mon</div>
+      <div class="text-center">Tue</div>
+      <div class="text-center">Wed</div>
+      <div class="text-center">Thu</div>
+      <div class="text-center">Fri</div>
+      <div class="text-center">Sat</div>
+      <div class="text-center">Sun</div>
+    </div>
+
+    <!-- Calendar days -->
+    <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
+
+    <!-- Selected date & entries -->
+    <div id="calendar-selected-date" class="text-xs text-white/70 mb-2"></div>
+    <div id="calendar-entries" class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"></div>
   </div>
 </div>
+
 
 
     <!-- SETTINGS TAB -->
@@ -567,6 +602,7 @@
     let xpTarget = 100;       // daily XP target
     let rewardText = "Reward yourself with something small when you hit your XP target.";
     let rewardShownDate = null; // date when fireworks were shown
+    
 
     let tasks = [];
     let folders = [];
@@ -587,6 +623,9 @@
     let defaultFocusMinutes = 25;     
     let celebrationsEnabled = true;    
     let enableAlerts = true;           
+    let calendarYear = new Date().getFullYear();
+    let calendarMonth = new Date().getMonth(); // 0 = Jan
+    let calendarSelectedIsoDate = todayStr();
 
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
@@ -1546,45 +1585,203 @@ function formatIsoToNice(iso) {
 }
 
 function renderCalendar() {
-  const container = document.getElementById('calendar-entries');
-  if (!container) return;
+  const monthLabelEl      = document.getElementById('calendar-month-label');
+  const gridEl            = document.getElementById('calendar-grid');
+  const selectedLabelEl   = document.getElementById('calendar-selected-date');
+
+  if (!monthLabelEl || !gridEl) return;
 
   const itemsByDate = buildCalendarItems();
-  const dates = Object.keys(itemsByDate);
+  const firstOfMonth = new Date(calendarYear, calendarMonth, 1);
 
-  if (dates.length === 0) {
-    container.innerHTML = `<p class="text-white/50 text-center py-12 text-sm">No activity yet.</p>`;
+  // Month label
+  const monthName = firstOfMonth.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long'
+  });
+  monthLabelEl.textContent = monthName;
+
+  // Monday‑based index of first day (0 = Monday)
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth  = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+
+  const todayIso = todayStr();
+  const cells = [];
+
+  // Empty cells before day 1
+  for (let i = 0; i < firstWeekday; i++) {
+    cells.push('<div class="h-9"></div>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(calendarYear, calendarMonth, day);
+    const iso  = date.toISOString().slice(0, 10);
+    const hasItems  = !!itemsByDate[iso];
+    const isToday   = iso === todayIso;
+    const isSelected = iso === calendarSelectedIsoDate;
+
+    let baseClasses =
+      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
+
+    if (isSelected) {
+      baseClasses += 'bg-lime-400 text-black font-semibold';
+    } else if (isToday) {
+      baseClasses += 'border border-lime-300/70 text-lime-200';
+    } else if (hasItems) {
+      baseClasses += 'bg-white/10 border border-white/20';
+    } else {
+      baseClasses += 'text-white/50';
+    }
+
+    const dot = hasItems
+      ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
+      : '';
+
+    cells.push(`
+      <button
+        class="${baseClasses} relative"
+        onclick="selectCalendarDate('${iso}')"
+      >
+        ${day}
+        ${dot}
+      </button>
+    `);
+  }
+
+  gridEl.innerHTML = cells.join('');
+
+  // Update selected date label
+  if (selectedLabelEl && calendarSelectedIsoDate) {
+    selectedLabelEl.textContent = formatIsoToNice(calendarSelectedIsoDate);
+  }
+
+  // Show entries for the selected day
+  renderCalendarEntriesForSelectedDate();
+}
+
+ function renderCalendar() {
+  const monthLabelEl      = document.getElementById('calendar-month-label');
+  const gridEl            = document.getElementById('calendar-grid');
+  const selectedLabelEl   = document.getElementById('calendar-selected-date');
+
+  if (!monthLabelEl || !gridEl) return;
+
+  const itemsByDate = buildCalendarItems();
+  const firstOfMonth = new Date(calendarYear, calendarMonth, 1);
+
+  // Month label
+  const monthName = firstOfMonth.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long'
+  });
+  monthLabelEl.textContent = monthName;
+
+  // Monday‑based index of first day (0 = Monday)
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth  = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+
+  const todayIso = todayStr();
+  const cells = [];
+
+  // Empty cells before day 1
+  for (let i = 0; i < firstWeekday; i++) {
+    cells.push('<div class="h-9"></div>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(calendarYear, calendarMonth, day);
+    const iso  = date.toISOString().slice(0, 10);
+    const hasItems  = !!itemsByDate[iso];
+    const isToday   = iso === todayIso;
+    const isSelected = iso === calendarSelectedIsoDate;
+
+    let baseClasses =
+      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
+
+    if (isSelected) {
+      baseClasses += 'bg-lime-400 text-black font-semibold';
+    } else if (isToday) {
+      baseClasses += 'border border-lime-300/70 text-lime-200';
+    } else if (hasItems) {
+      baseClasses += 'bg-white/10 border border-white/20';
+    } else {
+      baseClasses += 'text-white/50';
+    }
+
+    const dot = hasItems
+      ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
+      : '';
+
+    cells.push(`
+      <button
+        class="${baseClasses} relative"
+        onclick="selectCalendarDate('${iso}')"
+      >
+        ${day}
+        ${dot}
+      </button>
+    `);
+  }
+
+  gridEl.innerHTML = cells.join('');
+
+  // Update selected date label
+  if (selectedLabelEl && calendarSelectedIsoDate) {
+    selectedLabelEl.textContent = formatIsoToNice(calendarSelectedIsoDate);
+  }
+
+  // Show entries for the selected day
+  renderCalendarEntriesForSelectedDate();
+}
+
+function selectCalendarDate(isoDate) {
+  calendarSelectedIsoDate = isoDate;
+  renderCalendar();
+}
+
+function changeCalendarMonth(delta) {
+  calendarMonth += delta;
+  if (calendarMonth < 0) {
+    calendarMonth = 11;
+    calendarYear -= 1;
+  } else if (calendarMonth > 11) {
+    calendarMonth = 0;
+    calendarYear += 1;
+  }
+
+  // If selected date is not in this month, snap to first of month
+  const monthString = String(calendarMonth + 1).padStart(2, '0');
+  if (!calendarSelectedIsoDate.startsWith(`${calendarYear}-${monthString}`)) {
+    const firstIso = new Date(calendarYear, calendarMonth, 1).toISOString().slice(0, 10);
+    calendarSelectedIsoDate = firstIso;
+  }
+
+  renderCalendar();
+}
+
+function renderCalendarEntriesForSelectedDate() {
+  const container = document.getElementById('calendar-entries');
+  if (!container || !calendarSelectedIsoDate) return;
+
+  const itemsByDate = buildCalendarItems();
+  const items = itemsByDate[calendarSelectedIsoDate] || [];
+
+  if (items.length === 0) {
+    container.innerHTML = '<p class="text-white/50 text-xs">No entries on this day.</p>';
     return;
   }
 
-  // Sort newest first
-  dates.sort((a, b) => (a < b ? 1 : -1));
-
-  container.innerHTML = dates.map(iso => {
-    const niceDate = formatIsoToNice(iso);
-    const items = itemsByDate[iso];
-
-    const entriesHtml = items.map(item => `
-      <div class="flex gap-3 items-start">
-        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
-          ${item.type}
-        </span>
-        <div class="flex-1">
-          <div class="text-[11px] text-white/60 mb-1">${item.label}</div>
-          <p class="whitespace-pre-line text-sm text-white/90">${item.text}</p>
-        </div>
+  container.innerHTML = items.map(item => `
+    <div class="flex gap-3 items-start">
+      <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
+        ${item.type}
+      </span>
+      <div class="flex-1">
+        <div class="text-[11px] text-white/60 mb-1">${item.label}</div>
+        <p class="whitespace-pre-line text-sm text-white/90">${item.text}</p>
       </div>
-    `).join('<div class="h-2"></div>');
-
-    return `
-      <div>
-        <div class="text-xs tracking-[0.14em] uppercase text-white/60 mb-2">${niceDate}</div>
-        <div class="space-y-2">
-          ${entriesHtml}
-        </div>
-      </div>
-    `;
-  }).join('<div class="border-t border-white/10 my-3"></div>');
+    </div>
+  `).join('<div class="h-2"></div>');
 }
 
 
