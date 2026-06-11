@@ -179,18 +179,14 @@
           </svg>
           <span>Tasks</span>
         </button>
-        <button onclick="showSection('journal')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="journal">
-          <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M6 4h11a2 2 0 0 1 2 2v12H8a2 2 0 0 1-2-2V4z" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 8h13" stroke-linecap="round"/>
-          </svg>
-          <span>Journal</span>
-        </button>
-        <button onclick="showSection('gratitude')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="gratitude">
-          <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M12 20s-5.5-3.1-8-6.4C2 11 2 8.5 3.5 7 5 5.5 7.5 5.5 9 7l3 3 3-3c1.5-1.5 4-1.5 5.5 0C22 8.5 22 11 20 13.6 17.5 16.9 12 20 12 20z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>Gratitude</span>
+       <button onclick="showSection('reflections')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="reflections">
+  <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path d="M5 4h14v16H5z" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M9 8h6M9 12h4M9 16h3" stroke-linecap="round"/>
+  </svg>
+  <span>Reflections</span>
+</button>
+
 </button>
 <button onclick="showSection('calendar')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="calendar">
   <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -327,117 +323,118 @@
       </div>
     </div>
 
-     <!-- JOURNAL TAB -->
-    <div id="journal-section" class="section hidden max-w-md mx-auto p-4">
-      <div class="glass-card rounded-3xl p-6">
-        <h2 class="text-2xl luxury-logo mb-6">Daily Journal</h2>
+     <!-- REFLECTIONS TAB -->
+<div id="reflections-section" class="section hidden max-w-md mx-auto p-4">
+  <div class="glass-card rounded-3xl p-6">
+    <h2 class="text-2xl luxury-logo mb-4">Reflections</h2>
 
-        <!-- Template controls -->
-        <div class="flex flex-col gap-3 mb-4 text-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-xs text-white/70 tracking-[0.18em] uppercase">Template</div>
-              <div class="text-[11px] text-white/50 mt-0.5">Choose a prompt</div>
-            </div>
-            <!-- Add new template (+) from current text -->
-            <button
-              onclick="saveCurrentAsJournalTemplate()"
-              class="w-9 h-9 rounded-full border border-white/30 flex items-center justify-center text-lg"
-              title="Save current text as a new template"
-            >
-              +
-            </button>
-          </div>
-
-          <div class="flex gap-2">
-            <select
-              id="journal-template-select"
-              class="flex-1 bg-black/60 border border-white/20 rounded-3xl px-4 py-3 text-xs"
-            ></select>
-            <button
-              onclick="applyJournalTemplate()"
-              class="px-4 py-3 text-[11px] rounded-3xl border border-white/30"
-            >
-              Use
-            </button>
-          </div>
-
-          <div class="flex justify-between text-[11px] mt-1">
-            <button
-              onclick="updateSelectedJournalTemplate()"
-              class="px-3 py-2 rounded-2xl bg-white/5 border border-white/25"
-            >
-              Save changes
-            </button>
-            <button
-              onclick="deleteSelectedJournalTemplate()"
-              class="px-3 py-2 rounded-2xl bg-red-500/10 border border-red-400/60 text-red-200 flex items-center gap-1"
-              title="Delete selected template"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M5 7h14" stroke-linecap="round"/>
-                <path d="M10 11v6M14 11v6" stroke-linecap="round"/>
-                <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <textarea
-          id="journal-input"
-          rows="6"
-          class="w-full bg-black/60 border border-white/20 rounded-3xl p-4 text-sm text-white"
-          placeholder="Take a moment to check in with yourself. Use a template above or free‑write your thoughts."
-        ></textarea>
-
-        <div class="flex gap-3 mt-4">
-          <button
-            onclick="saveJournalEntry()"
-            class="flex-1 btn-gradient py-3.5 rounded-3xl text-sm"
-          >
-            Save Entry (+10 XP)
-          </button>
-        </div>
-      </div>
-
-      <div id="journal-entries" class="space-y-4 mt-6 text-sm"></div>
+    <!-- Toggle: Journal / Gratitude -->
+    <div class="flex gap-2 mb-4 text-sm">
+      <button
+        id="reflection-tab-journal"
+        class="flex-1 px-4 py-2 rounded-3xl border border-white/30 bg-white/10"
+        onclick="setReflectionType('journal')"
+      >
+        Journal
+      </button>
+      <button
+        id="reflection-tab-gratitude"
+        class="flex-1 px-4 py-2 rounded-3xl border border-white/10 bg-transparent text-white/70"
+        onclick="setReflectionType('gratitude')"
+      >
+        Gratitude
+      </button>
     </div>
 
-
-
-
-    <!-- GRATITUDE TAB -->
-    <div id="gratitude-section" class="section hidden max-w-md mx-auto p-4">
-      <div class="glass-card rounded-3xl p-6">
-        <h2 class="text-2xl luxury-logo mb-6">Gratitude Journal</h2>
-
-        <div class="flex flex-col gap-3 mb-4 text-sm">
-          <label class="text-xs text-white/70">Template</label>
-          <div class="flex gap-2">
-            <select id="gratitude-template-select" class="flex-1 bg-black/60 border border-white/20 rounded-3xl px-4 py-3 text-xs"></select>
-            <button onclick="applyGratitudeTemplate()" class="px-4 py-3 text-[11px] rounded-3xl border border-white/30">
-              Use
-            </button>
-          </div>
-          <div class="flex flex-wrap gap-2 text-[11px]">
-            <button onclick="saveCurrentAsGratitudeTemplate()" class="px-3 py-2 rounded-2xl bg-white/10 border border-white/20">
-              Save current as template
-            </button>
-            <button onclick="updateSelectedGratitudeTemplate()" class="px-3 py-2 rounded-2xl bg-white/5 border border-white/20">
-              Update selected template
-            </button>
-            <button onclick="deleteSelectedGratitudeTemplate()" class="px-3 py-2 rounded-2xl bg-red-500/10 border border-red-400/50 text-red-200">
-              Delete selected
-            </button>
-          </div>
+    <!-- Templates + Blank -->
+    <div class="flex items-center justify-between mb-3 text-xs text-white/70">
+      <div>
+        <div class="uppercase tracking-[0.18em] text-[10px]" id="reflection-template-label">
+          Journal templates
         </div>
-
-        <textarea id="gratitude-input" rows="5" class="w-full bg-black/60 border border-white/20 rounded-3xl p-4 text-sm text-white" placeholder="What are you grateful for today?"></textarea>
-        <button onclick="saveGratitudeEntry()" class="mt-4 w-full btn-gradient py-3.5 rounded-3xl text-sm">Save Gratitude (+10 XP)</button>
+        <div class="text-[11px]" id="reflection-template-hint">
+          Tap a template or start a blank entry.
+        </div>
       </div>
-      <div id="gratitude-entries" class="space-y-4 mt-6 text-sm"></div>
+      <button
+        onclick="openReflectionTemplates()"
+        class="px-3 py-2 rounded-2xl border border-white/30 text-[11px]"
+      >
+        Templates
+      </button>
     </div>
+
+    <!-- Large scrollable text area -->
+    <div class="mb-4">
+      <textarea
+        id="reflection-input"
+        class="w-full bg-black/60 border border-white/20 rounded-3xl p-4 text-sm text-white h-64 resize-none overflow-y-auto"
+        placeholder="Take a moment to check in with yourself..."
+      ></textarea>
+    </div>
+
+    <!-- XP + Save -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 text-xs text-white/70">
+        <span>XP for this entry</span>
+        <input
+          id="reflection-xp"
+          type="number"
+          value="10"
+          class="w-16 bg-black/60 border border-white/20 rounded-2xl px-2 py-1.5 text-xs text-center"
+        >
+      </div>
+      <button
+        onclick="saveReflectionEntry()"
+        class="flex-1 btn-gradient py-3.5 rounded-3xl text-sm text-black font-semibold text-center"
+      >
+        Save entry
+      </button>
+    </div>
+  </div>
+
+  <!-- List of entries for selected type -->
+  <div id="reflections-entries" class="space-y-4 mt-6 text-sm"></div>
+</div>
+
+<!-- Template modal -->
+<div
+  id="reflection-templates-modal"
+  class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
+>
+  <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="reflection-templates-title" class="text-sm font-medium">Templates</h3>
+      <button
+        onclick="closeReflectionTemplates()"
+        class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+      >
+        Close
+      </button>
+    </div>
+
+    <div class="mb-3">
+      <button
+        onclick="useBlankReflectionTemplate()"
+        class="w-full mb-2 px-3 py-2 rounded-2xl border border-white/25 text-xs text-left"
+      >
+        + Blank entry
+      </button>
+    </div>
+
+    <div id="reflection-templates-list" class="space-y-2 max-h-64 overflow-y-auto text-xs"></div>
+
+    <div class="mt-3 pt-3 border-t border-white/10">
+      <button
+        onclick="saveCurrentReflectionAsTemplate()"
+        class="w-full px-3 py-2 rounded-2xl border border-white/30 text-[11px]"
+      >
+        Save current text as new template
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <!-- CALENDAR TAB -->
 <div id="calendar-section" class="section hidden max-w-md mx-auto p-4">
@@ -615,6 +612,7 @@
     let currentEditingJournalTemplateId = null;  // which template we are editing (if any)
     let timerInterval = null;
     let timeLeft = 25 * 60;
+    let currentReflectionType = 'journal'; // 'journal' or 'gratitude'
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -1479,6 +1477,213 @@ function addJournalTemplateFromTextarea() {
   `).join('');
 }
 
+function renderReflectionsEntries() {
+  const container = document.getElementById('reflections-entries');
+  if (!container) return;
+
+  const isJournal = currentReflectionType === 'journal';
+  const list = isJournal ? journalEntries : gratitudeEntries;
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `<p class="text-white/50 text-center py-12 text-sm">No entries yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = list.map(e => `
+    <div class="glass-card rounded-3xl p-5 text-sm">
+      <div class="flex items-baseline justify-between gap-3">
+        <div class="text-xs ${isJournal ? 'text-lime-300' : 'text-amber-300'}">${e.date}</div>
+        <div class="flex gap-2 text-[11px]">
+          <button
+            class="px-2 py-1 rounded-2xl border border-white/30"
+            onclick="${isJournal ? `editJournalEntry('${e.id}')` : `editGratitudeEntry('${e.id}')`}"
+          >
+            Edit
+          </button>
+          <button
+            class="px-2 py-1 rounded-2xl border border-red-400/70 text-red-200"
+            onclick="${isJournal ? `deleteJournalEntry('${e.id}')` : `deleteGratitudeEntry('${e.id}')`}"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      <p class="mt-3 whitespace-pre-line">${e.text}</p>
+    </div>
+  `).join('');
+}
+
+function setReflectionType(type) {
+  currentReflectionType = type === 'gratitude' ? 'gratitude' : 'journal';
+
+  const tabJournal   = document.getElementById('reflection-tab-journal');
+  const tabGratitude = document.getElementById('reflection-tab-gratitude');
+  const templateLabel = document.getElementById('reflection-template-label');
+  const templateHint  = document.getElementById('reflection-template-hint');
+  const textarea      = document.getElementById('reflection-input');
+
+  if (tabJournal && tabGratitude) {
+    if (currentReflectionType === 'journal') {
+      tabJournal.classList.add('bg-white/10', 'border-white/30');
+      tabJournal.classList.remove('bg-transparent', 'text-white/70');
+
+      tabGratitude.classList.remove('bg-white/10', 'border-white/30');
+      tabGratitude.classList.add('bg-transparent', 'text-white/70');
+    } else {
+      tabGratitude.classList.add('bg-white/10', 'border-white/30');
+      tabGratitude.classList.remove('bg-transparent', 'text-white/70');
+
+      tabJournal.classList.remove('bg-white/10', 'border-white/30');
+      tabJournal.classList.add('bg-transparent', 'text-white/70');
+    }
+  }
+
+  if (templateLabel) {
+    templateLabel.textContent =
+      currentReflectionType === 'journal' ? 'Journal templates' : 'Gratitude templates';
+  }
+  if (templateHint) {
+    templateHint.textContent =
+      currentReflectionType === 'journal'
+        ? 'Choose a journal prompt or start a blank entry.'
+        : 'Choose a gratitude prompt or start a blank entry.';
+  }
+
+  if (textarea) {
+    textarea.placeholder =
+      currentReflectionType === 'journal'
+        ? 'Write your journal entry here...'
+        : 'What are you grateful for today?';
+  }
+
+  renderReflectionsEntries();
+}
+
+function openReflectionTemplates() {
+  const modal = document.getElementById('reflection-templates-modal');
+  const title = document.getElementById('reflection-templates-title');
+  const listEl = document.getElementById('reflection-templates-list');
+  if (!modal || !title || !listEl) return;
+
+  const isJournal = currentReflectionType === 'journal';
+  const list = isJournal ? journalTemplates : gratitudeTemplates;
+
+  title.textContent = isJournal ? 'Journal templates' : 'Gratitude templates';
+
+  if (!list || list.length === 0) {
+    listEl.innerHTML = `<p class="text-white/50 text-xs">No templates yet. Use "Save current text as new template" to create one.</p>`;
+  } else {
+    listEl.innerHTML = list.map(t => `
+      <div class="flex items-center justify-between bg-black/40 border border-white/15 rounded-2xl px-3 py-2">
+        <button
+          class="flex-1 text-left text-xs"
+          onclick="useReflectionTemplate('${t.id}')"
+        >
+          ${t.name}
+        </button>
+        <div class="flex gap-2 ml-2 text-[11px]">
+          <button
+            class="px-2 py-1 rounded-2xl border border-white/25"
+            onclick="renameReflectionTemplate('${t.id}')"
+          >
+            Rename
+          </button>
+          <button
+            class="px-2 py-1 rounded-2xl border border-red-400/60 text-red-200"
+            onclick="deleteReflectionTemplate('${t.id}')"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeReflectionTemplates() {
+  const modal = document.getElementById('reflection-templates-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function useBlankReflectionTemplate() {
+  const area = document.getElementById('reflection-input');
+  if (!area) return;
+  area.value = '';
+  closeReflectionTemplates();
+}
+
+function useReflectionTemplate(id) {
+  const isJournal = currentReflectionType === 'journal';
+  const list = isJournal ? journalTemplates : gratitudeTemplates;
+  const tpl = list.find(t => t.id === id);
+  const area = document.getElementById('reflection-input');
+  if (!tpl || !area) return;
+
+  area.value = tpl.content;
+  closeReflectionTemplates();
+}
+
+function saveCurrentReflectionAsTemplate() {
+  const area = document.getElementById('reflection-input');
+  if (!area) return;
+
+  const content = area.value.trim();
+  if (!content) {
+    alert("Write something first, then save it as a template.");
+    return;
+  }
+
+  const name = prompt("Name for this template:");
+  if (!name || !name.trim()) return;
+
+  const isJournal = currentReflectionType === 'journal';
+  const list = isJournal ? journalTemplates : gratitudeTemplates;
+
+  const id = (isJournal ? 'jr_' : 'gr_') + Date.now();
+  list.push({
+    id,
+    name: name.trim(),
+    content
+  });
+
+  saveData();
+  closeReflectionTemplates();
+}
+
+function renameReflectionTemplate(id) {
+  const isJournal = currentReflectionType === 'journal';
+  const list = isJournal ? journalTemplates : gratitudeTemplates;
+  const tpl = list.find(t => t.id === id);
+  if (!tpl) return;
+
+  const newName = prompt("New template name:", tpl.name);
+  if (!newName || !newName.trim()) return;
+
+  tpl.name = newName.trim();
+  saveData();
+  openReflectionTemplates(); // re-open to refresh list
+}
+
+function deleteReflectionTemplate(id) {
+  const isJournal = currentReflectionType === 'journal';
+  let list = isJournal ? journalTemplates : gratitudeTemplates;
+
+  const tpl = list.find(t => t.id === id);
+  if (!tpl) return;
+  if (!confirm(`Delete template "${tpl.name}"?`)) return;
+
+  list = list.filter(t => t.id !== id);
+  if (isJournal) journalTemplates = list; else gratitudeTemplates = list;
+  saveData();
+  openReflectionTemplates(); // re-open to refresh list
+}
+
+
 function editJournalEntry(id) {
   const entry = journalEntries.find(e => e.id === id);
   if (!entry) return;
@@ -1953,6 +2158,76 @@ function saveGratitudeEntry() {
   area.value = "";
 }
 
+function saveReflectionEntry() {
+  const xpInput = document.getElementById('reflection-xp');
+  const area    = document.getElementById('reflection-input');
+  if (!xpInput || !area) return;
+
+  const xpAmount = parseInt(xpInput.value, 10);
+  const amount = !xpAmount || xpAmount < 0 ? 0 : xpAmount;
+
+  if (currentReflectionType === 'journal') {
+    // Temporarily override default XP in saveJournalEntry
+    saveJournalEntryWithCustomXP(amount);
+  } else {
+    saveGratitudeEntryWithCustomXP(amount);
+  }
+
+  // Re-render list for this type
+  renderReflectionsEntries();
+}
+
+function saveJournalEntryWithCustomXP(xpAmount) {
+  const area = document.getElementById('reflection-input') || document.getElementById('journal-input');
+  if (!area) return;
+
+  const text = area.value.trim();
+  if (!text) {
+    alert("Write something in your journal before saving.");
+    return;
+  }
+
+  const todayIso = todayStr();
+  const entry = {
+    id: 'jr_' + Date.now(),
+    date: formatNiceDate(),
+    isoDate: todayIso,
+    text
+  };
+
+  journalEntries.unshift(entry);
+  if (xpAmount > 0) addXP(xpAmount, true);
+  renderJournal();
+  saveData();
+  renderCalendar();
+  area.value = "";
+}
+
+function saveGratitudeEntryWithCustomXP(xpAmount) {
+  const area = document.getElementById('reflection-input') || document.getElementById('gratitude-input');
+  if (!area) return;
+
+  const text = area.value.trim();
+  if (!text) {
+    alert("Write something you are grateful for before saving.");
+    return;
+  }
+
+  const todayIso = todayStr();
+  const entry = {
+    id: 'gr_' + Date.now(),
+    date: formatNiceDate(),
+    isoDate: todayIso,
+    text
+  };
+
+  gratitudeEntries.unshift(entry);
+  if (xpAmount > 0) addXP(xpAmount, true);
+  renderGratitude();
+  saveData();
+  renderCalendar();
+  area.value = "";
+}
 
 
     function saveRewardText() {
@@ -2011,11 +2286,17 @@ function saveGratitudeEntry() {
       setDailyQuote();
       showSection('today');
 
+
+
       const xpTargetInput = document.getElementById('setting-xp-target');
       const rewardInput   = document.getElementById('setting-reward-text');
       if (xpTargetInput) xpTargetInput.value = xpTarget;
       if (rewardInput)   rewardInput.value   = rewardText;
+
+      setReflectionType('journal');
+      renderReflectionsEntries();
     };
+
   </script>
 </body>
 </html>
