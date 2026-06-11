@@ -517,14 +517,25 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
       <div class="text-center">Sun</div>
     </div>
 
+    <!-- Filter -->
+    <div class="flex justify-end mb-2">
+      <select
+        id="calendar-filter"
+        onchange="changeCalendarFilter(this.value)"
+        class="bg-black/60 border border-white/20 rounded-2xl px-3 py-1.5 text-[11px]"
+      >
+        <option value="all">All entries</option>
+        <option value="allTasks">All tasks</option>
+        <option value="openTasks">Open tasks</option>
+        <option value="completedTasks">Completed tasks</option>
+        <option value="journal">Journal entries</option>
+        <option value="gratitude">Gratitude entries</option>
+      </select>
+    </div>
+
     <!-- Calendar days -->
     <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
 
-    <!-- Selected date & entries -->
-    <div id="calendar-selected-date" class="text-xs text-white/70 mb-2"></div>
-    <div id="calendar-entries" class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"></div>
-  </div>
-</div>
 
 
 
@@ -669,6 +680,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     let calendarYear = new Date().getFullYear();
     let calendarMonth = new Date().getMonth(); // 0 = Jan
     let calendarSelectedIsoDate = todayStr();
+    let calendarFilter = 'all'; // all, allTasks, openTasks, completedTasks, journal, gratitude
 
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
@@ -1831,6 +1843,7 @@ function buildCalendarItems() {
   journalEntries.forEach(e => {
     addItem(e.isoDate || todayStr(), {
       type: 'Journal',
+      kind: 'journal',
       label: 'Journal entry',
       text: e.text,
       colourClass: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/60'
@@ -1841,6 +1854,7 @@ function buildCalendarItems() {
   gratitudeEntries.forEach(e => {
     addItem(e.isoDate || todayStr(), {
       type: 'Gratitude',
+      kind: 'gratitude',
       label: 'Gratitude entry',
       text: e.text,
       colourClass: 'bg-amber-500/20 text-amber-200 border-amber-400/60'
@@ -1852,6 +1866,8 @@ function buildCalendarItems() {
     const createdDate = t.createdIsoDate || todayStr();
     addItem(createdDate, {
       type: 'Task',
+      kind: 'task_created',
+      done: !!t.done,
       label: t.priority ? 'Task created (priority)' : 'Task created',
       text: t.text,
       colourClass: 'bg-sky-500/15 text-sky-200 border-sky-400/60'
@@ -1860,6 +1876,8 @@ function buildCalendarItems() {
     if (t.done && t.completedIsoDate) {
       addItem(t.completedIsoDate, {
         type: 'Task done',
+        kind: 'task_done',
+        done: true,
         label: t.priority ? 'Task completed (priority)' : 'Task completed',
         text: t.text,
         colourClass: 'bg-lime-500/20 text-lime-100 border-lime-400/70'
@@ -1868,6 +1886,11 @@ function buildCalendarItems() {
   });
 
   return itemsByDate;
+}
+
+function changeCalendarFilter(value) {
+  calendarFilter = value || 'all';
+  renderCalendarEntriesForSelectedDate();
 }
 
 function formatIsoToNice(iso) {
@@ -2062,12 +2085,31 @@ function renderCalendarEntriesForSelectedDate() {
   const itemsByDate = buildCalendarItems();
   const items = itemsByDate[calendarSelectedIsoDate] || [];
 
-  if (items.length === 0) {
-    container.innerHTML = '<p class="text-white/50 text-xs">No entries on this day.</p>';
+  // Apply filter
+  const filtered = items.filter(item => {
+    switch (calendarFilter) {
+      case 'journal':
+        return item.kind === 'journal';
+      case 'gratitude':
+        return item.kind === 'gratitude';
+      case 'allTasks':
+        return item.kind === 'task_created' || item.kind === 'task_done';
+      case 'openTasks':
+        return item.kind === 'task_created' && !item.done;
+      case 'completedTasks':
+        return item.kind === 'task_done';
+      case 'all':
+      default:
+        return true;
+    }
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<p class="text-white/50 text-xs">No entries for this view on this day.</p>';
     return;
   }
 
-  container.innerHTML = items.map(item => `
+  container.innerHTML = filtered.map(item => `
     <div class="flex gap-3 items-start">
       <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
         ${item.type}
