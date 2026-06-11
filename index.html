@@ -756,10 +756,48 @@ if (storedJournalTemplates) {
 
 
       const storedGratitudeTemplates = localStorage.getItem('mydaygratitudetemplates');
-      gratitudeTemplates = storedGratitudeTemplates ? JSON.parse(storedGratitudeTemplates) : [
-        { id: 'gr1', name: '3 things',        content: "Today I am grateful for:\n1.\n2.\n3." },
-        { id: 'gr2', name: 'People & moments',content: "Person I am grateful for today and why:\n\nSmall moment I appreciated:\n\nSomething I often take for granted:" }
-      ];
+
+if (storedGratitudeTemplates) {
+  gratitudeTemplates = JSON.parse(storedGratitudeTemplates);
+
+  // If you only have the old 2 defaults, append the new third one
+  if (gratitudeTemplates.length === 2 &&
+      gratitudeTemplates.some(t => t.name === '3 things') &&
+      gratitudeTemplates.some(t => t.name === 'People & moments')) {
+
+    gratitudeTemplates.push({
+      id: 'gr_challenges',
+      name: 'Gratitude in challenges',
+      content:
+        "Gratitude in challenges\n\nSomething difficult I am facing right now:\n- \n\nOne small thing that is still going right:\n- \n\nWhat this situation is teaching me:\n- \n\nOne support or resource I am grateful for:\n- "
+    });
+
+    // Persist the new list
+    localStorage.setItem('mydaygratitudetemplates', JSON.stringify(gratitudeTemplates));
+  }
+} else {
+  // First run: use all 3 defaults
+  gratitudeTemplates = [
+    {
+      id: 'gr_morning_three',
+      name: '3 things today',
+      content: "Today I am grateful for:\n1.\n2.\n3."
+    },
+    {
+      id: 'gr_people_moments',
+      name: 'People & moments',
+      content:
+        "Person I am grateful for today and why:\n- \n\nSmall moment I appreciated:\n- \n\nSomething I often take for granted (and why it matters):\n- "
+    },
+    {
+      id: 'gr_challenges',
+      name: 'Gratitude in challenges',
+      content:
+        "Gratitude in challenges\n\nSomething difficult I am facing right now:\n- \n\nOne small thing that is still going right:\n- \n\nWhat this situation is teaching me:\n- \n\nOne support or resource I am grateful for:\n- "
+    }
+  ];
+}
+
 
       const storedStreak = localStorage.getItem('mydaystreak');
       streak = storedStreak ? parseInt(storedStreak, 10) : 0;
