@@ -198,7 +198,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     onclick="showSection('today')"
   >
     <img
-      src="myday2day-logo.png"
+      src="D2Dlogo.png"
       alt="MyDay2Day"
       class="header-logo"
     >
@@ -1310,15 +1310,23 @@ function addJournalTemplateFromTextarea() {
         scoped = tasks.filter(t => t.folderId === currentFolderId);
       }
 
-      const outstandingCount = scoped.filter(t => !t.done).length;
-      const completedCount   = scoped.filter(t => t.done).length;
+            const outstandingCount = scoped.filter(t => !t.done).length;
+
+      // Only count tasks completed *today*
+      const todayIso = todayStr();
+      const completedTodayCount = scoped.filter(
+        t => t.done && t.completedIsoDate === todayIso
+      ).length;
 
       if (countsEl) {
         const folderLabel = currentFolderId === 'all'
           ? 'all folders'
           : (folders.find(f => f.id === currentFolderId)?.name || 'this folder');
-        countsEl.textContent = `${outstandingCount} outstanding tasks · ${completedCount} completed tasks (${folderLabel})`;
+        countsEl.textContent =
+          `${outstandingCount} outstanding tasks · ` +
+          `${completedTodayCount} completed today (${folderLabel})`;
       }
+
 
       let filtered = scoped;
       if (filter === 'completed') filtered = scoped.filter(t => t.done);
