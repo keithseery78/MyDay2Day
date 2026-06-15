@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyDay2Day</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap');
-    .luxury-logo { font-family: 'Playfair Display', serif; letter-spacing: -2.5px; }
+    .luxury-logo {
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: -0.5px;  /* much less negative, more readable */
+}
     body {
       font-family: 'Inter', system_ui, sans-serif;
       min-height: 100vh;
@@ -254,9 +257,29 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
        <!-- TODAY DASHBOARD -->
     <div id="today-section" class="section max-w-md mx-auto p-4 space-y-6">
       <div class="glass-card rounded-3xl p-7">
-        <h2 id="greeting" class="text-2xl mb-1">Hello, Keith</h2>
+       <h2 id="greeting" class="text-2xl luxury-logo mb-1">Hello, Keith</h2>
         <p id="daily-quote" class="italic text-lime-100 text-sm"></p>
       </div>
+
+<!-- App overview -->
+<div class="glass-card rounded-3xl p-7">
+  <h3 class="font-medium mb-2">About MyDay2Day</h3>
+  <p class="text-sm text-white/80 space-y-1">
+    <span class="block">
+      MyDay2Day helps you turn scattered days into steady progress.
+    </span>
+    <span class="block mt-1">
+      Plan tasks, capture reflections and run short focus sessions, all in one calm place.
+    </span>
+    <span class="block mt-1">
+      Your XP and daily rewards remind you that rest and small celebrations matter as much as hard work.
+    </span>
+    <span class="block mt-1">
+      The built‑in tips and mental health tools give you practical, science‑based ways to look after your mind whilst you get things done.
+    </span>
+  </p>
+</div>
+
 
       <div class="grid grid-cols-2 gap-4">
         <div class="glass-card rounded-3xl p-6 text-center">
@@ -291,13 +314,35 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
         </div>
       </div>
 
-      <!-- Daily reward -->
+          <!-- Daily reward -->
       <div class="glass-card rounded-3xl p-7">
-        <h3 class="font-medium mb-2">Today's reward</h3>
-        <p id="reward-text-display" class="text-sm text-white/80">
+        <h3 class="font-medium mb-2 flex justify-between items-center">
+          <span>Today's reward</span>
+          <span class="text-[11px] text-white/60">Edit below</span>
+        </h3>
+
+        <!-- Displayed text -->
+        <p id="reward-text-display" class="text-sm text-white/80 mb-3">
           Reward yourself with something small when you hit your XP target.
         </p>
+
+        <!-- Quick edit input -->
+        <div class="flex gap-2 text-xs">
+          <input
+            id="home-reward-input"
+            type="text"
+            class="flex-1 bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+            placeholder="e.g. Long walk, favourite show, quiet bath"
+          >
+          <button
+            onclick="saveRewardTextFromHome()"
+            class="px-3 py-2 rounded-2xl border border-white/30"
+          >
+            Save
+          </button>
+        </div>
       </div>
+
 
       <!-- Did you know? mental health fact -->
       <div class="glass-card rounded-3xl p-7">
@@ -2547,6 +2592,24 @@ function saveGratitudeEntryWithCustomXP(xpAmount) {
       saveData();
     }
 
+    function saveRewardTextFromHome() {
+      const input = document.getElementById('home-reward-input');
+      if (!input) return;
+
+      const value = input.value.trim();
+      if (!value) return;
+
+      rewardText = value;
+      updateRewardUI();
+
+      // Keep Settings field in sync, if it exists
+      const settingsInput = document.getElementById('setting-reward-text');
+      if (settingsInput) settingsInput.value = rewardText;
+
+      saveData();
+    }
+
+
     function saveXpTarget() {
       const input = document.getElementById('setting-xp-target');
       if (!input) return;
@@ -2602,8 +2665,12 @@ function saveGratitudeEntryWithCustomXP(xpAmount) {
       if (xpTargetInput) xpTargetInput.value = xpTarget;
       if (rewardInput)   rewardInput.value   = rewardText;
 
+      const homeRewardInput = document.getElementById('home-reward-input');
+      if (homeRewardInput) homeRewardInput.value = rewardText;
+
       setReflectionType('journal');
       renderReflectionsEntries();
+
     };
 
 
