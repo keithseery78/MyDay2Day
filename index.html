@@ -232,7 +232,6 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
   <span>Reflections</span>
 </button>
 
-</button>
 <button onclick="showSection('calendar')" class="nav-btn flex-1 py-2 flex flex-col items-center" data-tab="calendar">
   <svg class="w-6 h-6 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
     <rect x="3" y="5" width="18" height="16" rx="2" ry="2"></rect>
@@ -252,7 +251,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
       </div>
     </nav>
 
-    <!-- TODAY DASHBOARD -->
+       <!-- TODAY DASHBOARD -->
     <div id="today-section" class="section max-w-md mx-auto p-4 space-y-6">
       <div class="glass-card rounded-3xl p-7">
         <h2 id="greeting" class="text-2xl mb-1">Hello, Keith</h2>
@@ -261,12 +260,12 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
 
       <div class="grid grid-cols-2 gap-4">
         <div class="glass-card rounded-3xl p-6 text-center">
-  	<div id="today-xp" class="text-4xl font-bold text-lime-300">0</div>
-  	<div class="text-sm text-white/60">XP today</div>
-  	<div class="text-[11px] text-white/60 mt-2">
-    	Target: <span id="xp-target-display">100</span> XP
-  	</div>
-	</div>
+          <div id="today-xp" class="text-4xl font-bold text-lime-300">0</div>
+          <div class="text-sm text-white/60">XP today</div>
+          <div class="text-[11px] text-white/60 mt-2">
+            Target: <span id="xp-target-display">100</span> XP
+          </div>
+        </div>
 
         <div class="glass-card rounded-3xl p-6 text-center">
           <div id="streak-display" class="text-4xl">🔥 0</div>
@@ -300,6 +299,15 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
         </p>
       </div>
 
+      <!-- Did you know? mental health fact -->
+      <div class="glass-card rounded-3xl p-7">
+        <h3 class="font-medium mb-2">Did you know?</h3>
+        <p id="daily-fact" class="text-sm text-white/80">
+          Small shifts in how you talk to yourself can change how your brain responds to stress.
+        </p>
+      </div>
+
+
       <!-- Most Important Tasks -->
       <div class="glass-card rounded-3xl p-7">
         <h3 class="font-medium mb-4 flex justify-between">
@@ -308,29 +316,14 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
         </h3>
         <div id="mit-list" class="space-y-3"></div>
       </div>
-
-      <!-- Custom Focus Timer -->
-      <div class="glass-card rounded-3xl p-7">
-        <h3 class="font-medium mb-4">Focus Timer</h3>
-        <div class="flex gap-3 mb-4">
-          <input id="custom-minutes" type="number" value="25" class="flex-1 bg-black/60 border border-white/20 rounded-3xl px-6 py-4 text-center text-xl font-mono">
-          <span class="self-center text-white/60">minutes</span>
-        </div>
-        <div class="text-center">
-          <div id="timer-display" class="text-4xl font-mono font-bold text-lime-300 mb-4">25:00</div>
-          <div class="flex justify-center gap-3">
-            <button onclick="startCustomTimer()" class="px-6 py-3 bg-lime-400 text-black font-semibold rounded-3xl text-sm">Start</button>
-            <button onclick="resetTimer()" class="px-6 py-3 border border-white/30 rounded-3xl text-sm">Reset</button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- TASKS TAB -->
     <div id="tasks-section" class="section hidden max-w-md mx-auto p-4">
+      <!-- Tasks card -->
       <div class="glass-card rounded-3xl p-5">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xl">Tasks</h2>
+          <h2 class="text-2xl luxury-logo">Tasks</h2>
           <select id="task-filter" onchange="filterTasks()" class="bg-black/60 border border-white/20 rounded-2xl px-3 py-1.5 text-xs">
             <option value="all">Outstanding</option>
             <option value="priority">Priorities</option>
@@ -366,12 +359,64 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
           <button onclick="addTask()" class="mt-3 w-full btn-gradient text-black font-semibold py-3.5 rounded-3xl text-sm">+ Add Task</button>
         </div>
       </div>
-    </div>
+
+           <!-- Custom Focus Timer (in Tasks) -->
+      <div class="glass-card rounded-3xl p-7 mt-4">
+        <h3 class="font-medium mb-1">Focus Timer</h3>
+        <p class="text-xs text-white/60 mb-4">
+          Set a short, distraction‑free block and give one task your full attention.  
+          Every finished session earns XP and trains your focus, one calm sprint at a time.
+        </p>
+               <div class="flex gap-3 mb-4">
+          <div class="flex-1">
+            <div class="flex gap-2 mb-2">
+              <input
+                id="custom-minutes"
+                type="number"
+                value="25"
+                class="w-full bg-black/60 border border-white/20 rounded-3xl px-6 py-3 text-center text-xl font-mono"
+              >
+            </div>
+            <div class="flex justify-between text-[11px] text-white/60 px-1">
+              <span>Minutes</span>
+              <span class="text-white/50">e.g. 25 for a deep work block</span>
+            </div>
+          </div>
+          <div class="w-28">
+            <input
+              id="focus-xp"
+              type="number"
+              value="25"
+              class="w-full bg-black/60 border border-white/20 rounded-3xl px-3 py-3 text-center text-sm"
+            >
+            <div class="text-[11px] text-white/60 mt-1 text-center">XP reward</div>
+          </div>
+        </div>
+        <div class="text-center">
+          <div id="timer-display" class="text-4xl font-mono font-bold text-lime-300 mb-4">25:00</div>
+          <div class="flex justify-center gap-3">
+            <button onclick="startCustomTimer()" class="px-6 py-3 bg-lime-400 text-black font-semibold rounded-3xl text-sm">Start</button>
+            <button onclick="resetTimer()" class="px-6 py-3 border border-white/30 rounded-3xl text-sm">Reset</button>
+          </div>
+        </div>
+      </div>
+</div>
 
      <!-- REFLECTIONS TAB -->
 <div id="reflections-section" class="section hidden max-w-md mx-auto p-4">
   <div class="glass-card rounded-3xl p-6">
     <h2 class="text-2xl luxury-logo mb-4">Reflections</h2>
+
+    <!-- Tip for today -->
+    <div class="mb-4 bg-white/5 border border-white/15 rounded-3xl p-4 text-sm">
+      <div class="text-[11px] uppercase tracking-[0.16em] text-white/60 mb-1">
+        Tip for today
+      </div>
+      <p id="reflection-tip" class="text-sm text-white/80">
+        Taking a moment to breathe before you write can help your brain shift out of 'busy mode' into reflection.
+      </p>
+    </div>
+
 
     <!-- Toggle: Journal / Gratitude -->
     <div class="flex gap-2 mb-4 text-sm">
@@ -408,6 +453,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
         Templates
       </button>
     </div>
+
 
     <!-- Large scrollable text area -->
     <div class="mb-4">
@@ -536,6 +582,11 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     <!-- Calendar days -->
     <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
 
+    <!-- Selected date & entries -->
+    <div id="calendar-selected-date" class="text-xs text-white/70 mb-2"></div>
+    <div id="calendar-entries" class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"></div>
+  </div>
+</div>
 
 
 
@@ -763,10 +814,13 @@ if (storedTasks) {
 tasks.forEach(t => {
   if (!t.folderId) t.folderId = 'inbox';
   if (!t.createdIsoDate) t.createdIsoDate = todayStr();
-  // Optional: if a task is already done, give it a completion date if missing
+  // If a task is already done, ensure it has a completion date
   if (t.done && !t.completedIsoDate) t.completedIsoDate = todayStr();
+  // Track whether XP has been awarded for this completion
+  if (typeof t.xpAwarded === 'undefined') {
+    t.xpAwarded = !!t.done;
+  }
 });
-
 
 const storedJournal = localStorage.getItem('mydayjournal');
 journalEntries = storedJournal ? JSON.parse(storedJournal) : [];
@@ -1021,22 +1075,30 @@ if (storedGratitudeTemplates) {
     }
 
     // Focus timer
-    function startCustomTimer() {
+      function startCustomTimer() {
       if (timerInterval) clearInterval(timerInterval);
-      const minutes = parseInt(document.getElementById('custom-minutes').value) || 25;
+
+      const minutesInput = document.getElementById('custom-minutes');
+      const xpInput      = document.getElementById('focus-xp');
+
+      const minutes = minutesInput ? parseInt(minutesInput.value, 10) || 25 : 25;
+      const xpReward = xpInput ? parseInt(xpInput.value, 10) || minutes : minutes;
+
       timeLeft = minutes * 60;
       updateTimerDisplay();
+
       timerInterval = setInterval(() => {
         timeLeft--;
         updateTimerDisplay();
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
           timerInterval = null;
-          addXP(minutes, true);
-          alert(`Focus session complete! +${minutes} XP earned 🎉`);
+          addXP(xpReward, true);
+          alert(`Focus session complete! +${xpReward} XP earned 🎉`);
         }
       }, 1000);
     }
+
 
     function updateTimerDisplay() {
       const min = Math.floor(timeLeft / 60);
@@ -1397,8 +1459,10 @@ function addJournalTemplateFromTextarea() {
   priority,
   folderId: folderIdForTask,
   createdIsoDate: todayStr(),
-  completedIsoDate: null
+  completedIsoDate: null,
+  xpAwarded: false
 });
+
 
       document.getElementById('new-task').value = '';
       document.getElementById('new-task-priority').checked = false;
@@ -1410,16 +1474,34 @@ function addJournalTemplateFromTextarea() {
     }
 
     function toggleTask(i) {
-  const wasDone = tasks[i].done;
+  const task = tasks[i];
+  if (!task) return;
 
-  if (!wasDone) {
-    addXP(tasks[i].xp, true);
-    tasks[i].done = true;
-    tasks[i].completedIsoDate = todayStr();
+  const today = todayStr();
+
+  if (!task.done) {
+    // Marking as completed
+    task.done = true;
+    task.completedIsoDate = today;
+
+    if (!task.xpAwarded) {
+      addXP(task.xp, true);   // earn XP once
+      task.xpAwarded = true;
+    } else {
+      saveData();             // data changed but XP already counted before
+    }
   } else {
-    tasks[i].done = false;
-    tasks[i].completedIsoDate = null;
-    saveData();
+    // Undoing completion
+    task.done = false;
+    task.completedIsoDate = null;
+
+    if (task.xpAwarded) {
+      // Remove the XP previously gained for this task
+      addXP(-task.xp, false); // negative XP, do not re‑register engagement
+      task.xpAwarded = false;
+    } else {
+      saveData();
+    }
   }
 
   renderTasks(document.getElementById('task-filter').value || 'all');
@@ -1427,6 +1509,7 @@ function addJournalTemplateFromTextarea() {
   updateHomeStats();
   renderCalendar();   // refresh
 }
+
 
 
     function renderMITs() {
@@ -1492,6 +1575,198 @@ function addJournalTemplateFromTextarea() {
   { text: "You owe it to yourself to become everything you have ever dreamed of being.", author: "Unknown" },
   { text: "Tiny changes, remarkable results.", author: "James Clear" }
 ];
+
+
+    const mentalHealthFacts = [
+      "Taking ten slow breaths can calm your nervous system in under a minute.",
+      "Writing down worries often makes them feel more manageable and less overwhelming.",
+      "Walking for just 10 minutes can improve your mood and reduce stress.",
+      "Your brain can grow new connections all your life, which means change is always possible.",
+      "Saying 'I am learning' instead of 'I failed' teaches your brain to keep trying.",
+      "Sleep is one of the most powerful tools for mental health and emotional balance.",
+      "You do not need to be positive all the time to make progress; you only need to be consistent.",
+      "Spending time in daylight helps regulate your mood and sleep hormones.",
+      "Talking to someone you trust can lower stress just as effectively as many coping techniques.",
+      "Setting tiny goals is often more effective than chasing huge ones when you feel low.",
+      "Kindness towards others has been shown to boost your own mood and wellbeing.",
+      "Your brain cannot tell the difference between imagining a calm place and actually being there; visualisation really helps.",
+      "Naming what you feel, such as 'I feel anxious', often reduces the intensity of the emotion.",
+      "You are allowed to rest without first earning it through productivity.",
+      "Saying 'no' is a mental health skill, not a failure to help others.",
+      "Mental health improves when your actions are aligned with your values, not with other people's expectations.",
+      "Gratitude journalling for even one minute a day can shift your attention towards what is working.",
+      "You can restart your day at any time, not only in the morning.",
+      "Small routines, like a morning stretch, give your brain a sense of safety and predictability.",
+      "Your thoughts are not commands; they are suggestions you can choose to accept or decline.",
+      "Practising self compassion activates the same calming systems as being comforted by a friend.",
+      "It is normal for motivation to rise and fall; discipline is what carries you in between.",
+      "Limiting news and social media can significantly reduce anxiety for many people.",
+      "Breathing out for longer than you breathe in tells your body it is safe to relax.",
+      "Being brave does not mean you do not feel fear; it means you act whilst fear is present.",
+      "Spending time on hobbies is not a luxury, it is maintenance for your mental health.",
+      "Progress often feels boring in the moment and impressive only in hindsight.",
+      "Learning to tolerate discomfort is a superpower for growth and resilience.",
+      "Your brain is wired to notice threats more than positives; you are not negative, you are human.",
+      "Choosing one thing to do next quietens mental noise more than thinking about ten options.",
+      "Most people underestimate how much others are willing to listen and care.",
+      "Writing a to‑do list before bed can help your brain switch off and sleep better.",
+      "Movement releases chemicals that act like natural antidepressants in your brain.",
+      "You do not have to believe every thought that says you are not good enough.",
+      "Perfectionism often hides fear of being judged; aiming for 'good enough' is healthier.",
+      "You are allowed to take up space, ask for help and express needs without apologising.",
+      "Healing is rarely a straight line; ups and downs do not mean you are back at the start.",
+      "Your future self will thank you more for small daily actions than for rare bursts of effort.",
+      "Emotional strength includes knowing when to rest and when to reach out.",
+      "Boundaries are bridges that protect relationships, not walls that destroy them.",
+      "Spending time in nature can lower stress hormones and improve attention.",
+      "You can be proud of surviving things you never planned to go through.",
+      "Changing your self talk from 'What is wrong with me?' to 'What do I need?' is healing.",
+      "Taking breaks improves focus and performance; rest is a tool, not a treat.",
+      "It is possible to feel two things at once, such as being anxious and still capable.",
+      "Deep friendships often come from being honest about your struggles, not your strengths.",
+      "Writing down three small wins each day trains your brain to search for progress.",
+      "Your worth does not depend on productivity, appearance or other people's approval.",
+      "Every time you choose a healthy coping strategy, you are rewiring your brain slightly.",
+      "You can start caring for your mental health even if life around you has not changed yet.",
+      "Asking for help is a sign of self respect, not weakness.",
+      "You grow more from showing up imperfectly than from waiting to feel ready.",
+      "Sometimes the bravest thing you can do is simply to stay present with your feelings.",
+      "Saying 'I am having the thought that...' creates distance from unhelpful thoughts.",
+      "You are allowed to unsubscribe from drama to protect your peace.",
+      "Accepting an emotion is the first step to changing how you respond to it.",
+      "Your nervous system calms down when you feel seen, even if it is by your future self in a journal.",
+      "Focusing on what you can control gives your brain somewhere useful to put its energy.",
+      "You do not need to fix every problem today; you only need to choose one next step.",
+      "Feeling tired all the time can be a sign of emotional overload, not laziness.",
+      "Hope can be built by noticing small improvements, not waiting for one big miracle.",
+      "The way you speak to yourself when you make a mistake matters more than the mistake.",
+      "Practising gratitude does not deny pain; it simply widens the picture.",
+      "Your past does not limit the new habits your brain can learn now.",
+      "Resting before you burn out is more effective than recovering afterwards.",
+      "Even five minutes of tidy space can make your mind feel clearer.",
+      "Your body carries stress; gentle stretching or shaking it out helps release tension.",
+      "Self care also includes hard things, like making appointments and paying bills.",
+      "A bad day does not equal a bad life; it is a single page, not the whole story.",
+      "You are allowed to start again as many times as you need.",
+      "Letting go of comparison creates space for your own pace.",
+      "Learning about mental health is itself an act of self care.",
+      "You do not have to explain your boundaries to make them valid.",
+      "Even when you feel stuck, your brain is still learning from what you practise.",
+      "Sometimes the most productive choice is going to bed earlier.",
+      "Your feelings are always valid, even if your thoughts about them are not always accurate.",
+      "Tiny acts of courage build confidence much faster than waiting to feel confident.",
+      "Scheduling joy on purpose can be as important as scheduling work.",
+      "You can choose to respond to yourself with curiosity instead of criticism.",
+      "Slowing down your morning, even slightly, can set the tone for the whole day.",
+      "Letting yourself cry is a natural way for your body to process emotion.",
+      "You cannot hate yourself into becoming the person you want to be.",
+      "Replacing 'should' with 'could' often reduces pressure and opens options.",
+      "Most people you admire have struggled with doubt; they moved anyway.",
+      "Your brain learns safety from repeated small proofs that you can handle discomfort.",
+      "It is completely fine if your best today is different from your best yesterday.",
+      "Sometimes the right answer is not to push harder, but to be gentler with yourself.",
+      "You are allowed to feel proud of progress other people cannot see.",
+      "Choosing silence instead of reacting immediately can protect your peace.",
+      "Creating predictable routines makes anxiety easier to manage for many people.",
+      "You can practice gratitude for yourself, not just for things and other people.",
+      "Staying hydrated and eating regularly can significantly improve your mood and focus.",
+      "You do not have to solve everything in your head; writing things down is problem solving too.",
+      "Your brain pays attention to what you repeatedly consume; choose inputs that support you.",
+      "It is brave to admit you are not fine when everyone expects you to be.",
+      "Practising saying 'I am learning' turns mistakes into lessons.",
+      "Your mental health is part of your health, not separate from it.",
+      "You deserve the same kindness and patience that you give to others.",
+      "Small acts of tidying, planning or journalling are investments in your future calm.",
+      "Every day you keep going is already proof of your resilience.",
+      "You are not behind; you are simply on your own timeline.",
+      "It is never too late to start taking your mental health seriously.",
+      "You do not have to know the whole path; you only need the next right step.",
+      "Even when your mind is loud, moments of calm are still possible.",
+      "The fact that you care about your mental health is already a strong foundation."
+    ];
+
+    const mentalHealthTips = [
+      "Use the ten-minute rule for tasks you dread. Set a timer for ten minutes and promise yourself you can stop afterwards. Behavioural activation research shows that starting, even for a short time, often reduces avoidance and increases the chance you will keep going.",
+      "Practise diaphragmatic breathing when you feel keyed up. Breathe in through your nose for four counts, hold for two, and breathe out slowly for six to eight counts. Longer exhales activate the parasympathetic nervous system, which can lower heart rate and calm the body.",
+      "Try 'worry time' instead of worrying all day. Pick a 15-minute slot where you are allowed to write down and think about worries. Outside that slot, gently park them for later. Studies on stimulus control show this can reduce constant rumination and give you more focus.",
+      "When you feel low, schedule one small, enjoyable activity for today, even if you do not feel like it. Behavioural activation for depression shows that positive actions often come before positive feelings, not the other way round.",
+      "Use the 'name it to tame it' technique for strong emotions. Write a short sentence such as 'I notice I am feeling anxious and tense'. Labelling emotions engages brain regions involved in regulation and can reduce intensity.",
+      "Protect your sleep with a wind‑down routine. For the last 30–60 minutes before bed, switch off bright screens, dim the lights and do something calming like reading or stretching. Consistent routines support your circadian rhythm and improve sleep quality.",
+      "When your thoughts feel harsh, rewrite one of them as if you were talking to a close friend. Self‑compassion research shows that a kinder inner voice is linked to lower anxiety and greater resilience.",
+      "Break big goals into next actions. Instead of 'sort my life out', write the smallest concrete step, such as 'open my email inbox' or 'write the first sentence'. Our brains handle specific actions better than vague, overwhelming tasks.",
+      "Try a body scan when you feel disconnected. Gently bring your attention from your toes up to your head, noticing sensations without judgement. Mindfulness studies suggest that this can reduce stress and improve body awareness.",
+      "Use movement as a mood tool, not just for fitness. Even a five‑minute brisk walk or gentle stretching increases blood flow and releases neurotransmitters linked to improved mood and focus.",
+      "Practise 'fact versus story' with unhelpful thoughts. Write down what objectively happened (facts) and then what you are telling yourself about it (story). Cognitive behavioural therapy shows separating the two makes it easier to challenge negative interpretations.",
+      "Schedule micro‑breaks during focused work. Every 45–60 minutes, stand up, stretch or look out of a window for a couple of minutes. Short breaks prevent mental fatigue and can improve concentration over longer periods.",
+      "Start your day by checking in with three questions: 'How do I feel?', 'What do I need?', and 'What is one kind thing I can do for myself today?'. This simple practice builds emotional awareness and intentional self‑care.",
+      "When you feel overwhelmed, use the 'one drawer' method. Tidy or organise just one small area: a drawer, your desktop, or a folder. Research on environmental clutter suggests that even small improvements reduce stress and give a sense of control.",
+      "Practise gratitude that is specific, not general. Instead of 'I am grateful for my family', write 'I am grateful for the message my sister sent this morning because it made me feel supported'. Specific gratitude is more strongly linked to increased wellbeing.",
+      "Limit multitasking with your phone. During deep work or important conversations, put your phone in another room or use 'do not disturb'. Studies show that even the presence of a phone on the table can reduce focus and perceived connection.",
+      "Try 'if–then' coping plans. For example: 'If I notice I am doom‑scrolling, then I will put my phone down and take ten breaths' or 'If I start catastrophising, then I will write down three realistic outcomes.' Implementation intentions help new habits stick.",
+      "Use values, not moods, to choose actions. Ask 'What would the person I want to become do in this situation?' and act on that, even if you do not feel like it. Acceptance and commitment therapy shows values‑based actions increase meaning and motivation.",
+      "Create a 'kind evidence' list. Keep a note of moments when you handled something better than expected, were kind, or showed strength. On tougher days, revisiting this list can counterbalance a negativity bias in your memory.",
+      "Practise progressive muscle relaxation in the evening. Gently tense a muscle group as you breathe in, hold for a few seconds, then release as you breathe out, moving from feet to face. This technique has been shown to reduce physical tension and aid sleep.",
+      "Refrain from making big decisions on very bad days. Intense emotions narrow your perspective. Give yourself a rule: 'I do not make life decisions when I am exhausted or overwhelmed; I revisit them when I have slept and eaten.'",
+      "When you criticise yourself, add 'and still' at the end. For example, 'I am anxious and still I am showing up' or 'I made a mistake and still I am learning'. This tiny shift acknowledges difficulty while reinforcing capability.",
+      "Practise 'opposite action' with certain emotions. If you feel like withdrawing all day, consider doing one small connecting action, such as messaging a friend. Dialectical behaviour therapy shows that doing the opposite of an unhelpful urge can shift mood.",
+      "Keep caffeine and heavy meals away from bedtime. Caffeine can stay in your system for up to six hours or more, and heavy food close to sleep can disrupt rest. Both affect the deep sleep that is vital for emotional regulation.",
+      "Try single‑tasking one everyday activity, such as drinking tea or brushing your teeth. Pay attention to sensations, smells and sounds without rushing. Mindful attention to simple tasks has been linked with lower stress and higher satisfaction.",
+      "Use a 'worry parking lot' when you need to focus. Keep a small notepad next to you; whenever a worry pops up, quickly jot it down and say 'parked for later'. This externalises the thought and reduces mental clutter.",
+      "Notice your self‑talk after setbacks. Instead of 'I always mess things up', try 'This did not go as I hoped; what is one thing I can adjust next time?'. Growth‑mindset research shows this framing supports persistence and learning.",
+      "Build a tiny 'arrival routine' when you get home, such as putting keys in the same place, washing your hands and taking three slow breaths. Predictable rituals can signal safety to your nervous system and help you shift out of work mode.",
+      "Practise saying 'I choose' instead of 'I have to' for small tasks. For example, 'I choose to tidy my desk because I want a clearer mind'. This language shift increases a sense of agency, which is linked to better mental health.",
+      "If you struggle with sleep, keep your bed for sleep and rest only. Avoid working or scrolling there for long periods. This is stimulus control: it retrains your brain to associate bed with sleep rather than wakefulness.",
+      "Use 'noticing without judging' in your journal. Instead of labelling feelings as good or bad, describe them as 'pleasant', 'unpleasant' or 'neutral'. Non‑judgemental awareness is a core component of mindfulness‑based stress reduction.",
+      "Experiment with 'time‑boxed worry'. When something is bothering you, allow yourself a set time to plan or problem‑solve, then deliberately switch to a different activity. This prevents worries from expanding to fill the whole day.",
+      "Schedule small 'joy breaks' into your week, such as listening to a favourite song, stepping outside, or drawing for five minutes. Positive psychology research shows that regular moments of positive emotion broaden thinking and build resilience.",
+      "When you feel socially anxious, prepare two or three open‑ended questions beforehand, such as 'What have you been enjoying lately?' Having prompts ready reduces cognitive load and can make conversations feel easier.",
+      "Practise noticing early signs of stress in your body: tight shoulders, shallow breathing, clenched jaw. The earlier you notice, the easier it is to use calming strategies before stress escalates.",
+      "If you tend to catastrophise, write down the worst case, best case and most likely case for a situation. CBT research shows that deliberately considering multiple outcomes reduces anxiety and brings your expectations closer to reality.",
+      "When you feel lonely, try a small act of connection that does not require perfection: sending a short 'thinking of you' message or commenting kindly online. Small bids for connection still have measurable effects on wellbeing.",
+      "Keep your expectations realistic on low‑energy days. Choose one or two essential tasks and deliberately label the day as a 'maintenance day'. Adjusting expectations reduces unnecessary self‑criticism and burnout.",
+      "Use a 'compassionate close' at the end of your journal entry. Add a final line addressed to yourself, such as 'I am doing the best I can with what I know now.' This reinforces self‑support rather than leaving the entry on a harsh note.",
+      "Pay attention to the media you consume first thing in the morning and last thing at night. High‑intensity news or conflict can prime your brain for threat; calmer content helps regulate your emotional baseline.",
+      "Practise grounding through your senses when anxious. List five things you can see, four you can feel, three you can hear, two you can smell and one you can taste. This 5‑4‑3‑2‑1 method anchors attention in the present moment.",
+      "If you procrastinate on self‑care, bundle it with something you already do. For example, every time you boil the kettle, stretch your shoulders, or when you brush your teeth, think of one thing you are grateful for. Habit stacking supports consistency.",
+      "When you feel the urge to people‑please, pause and ask: 'What would I say if I respected my energy as much as theirs?'. Learning to set boundaries protects against burnout and resentment.",
+      "Use a 'success playlist' on low‑motivation days. Listening to personally meaningful, upbeat music can improve mood and increase dopamine levels, which support motivation.",
+      "If you often feel 'on edge', experiment with reducing background noise and notifications. Constant pings keep your nervous system slightly activated; periods of quiet help it reset.",
+      "Practise small acts of self‑respect: keeping promises to yourself about sleep, food or breaks. Over time these actions strengthen a sense of trust in yourself, which is protective for mental health.",
+      "Remember that therapy‑style tools are not only for crises. Using journalling, breathing exercises or thought‑challenging when things are going reasonably well builds skills you can rely on when life becomes harder.",
+      "When starting a new habit for your wellbeing, aim to make it 'embarrassingly easy' at first, such as one line of journalling or three minutes of stretching. Behavioural science shows that making actions small increases the likelihood you will repeat them.",
+      "If you struggle with negative body image, practise writing down what your body does for you (breathing, moving, sensing) rather than only how it looks. Shifting focus to function is associated with better body appreciation.",
+      "On tough days, gently shorten your horizon. Ask: 'What would taking care of myself look like for just the next hour?' Focusing on a small time window reduces overwhelm and helps you act in the present."
+    ];
+
+    function setDailyReflectionTip() {
+      const el = document.getElementById('reflection-tip');
+      if (!el) return;
+
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+
+      const tip = mentalHealthTips[dayOfYear % mentalHealthTips.length];
+      el.textContent = tip;
+    }
+
+
+    function setDailyFact() {
+      const el = document.getElementById('daily-fact');
+      if (!el) return;
+
+      // Use day of year so you get a fresh stat as the year goes on
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+
+      const fact = mentalHealthFacts[dayOfYear % mentalHealthFacts.length];
+      el.textContent = fact;
+    }
 
 
     function setDailyQuote() {
@@ -1978,105 +2253,6 @@ function renderCalendar() {
   renderCalendarEntriesForSelectedDate();
 }
 
- function renderCalendar() {
-  const monthLabelEl      = document.getElementById('calendar-month-label');
-  const gridEl            = document.getElementById('calendar-grid');
-  const selectedLabelEl   = document.getElementById('calendar-selected-date');
-
-  if (!monthLabelEl || !gridEl) return;
-
-  const itemsByDate = buildCalendarItems();
-  const firstOfMonth = new Date(calendarYear, calendarMonth, 1);
-
-  // Month label
-  const monthName = firstOfMonth.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long'
-  });
-  monthLabelEl.textContent = monthName;
-
-  // Monday‑based index of first day (0 = Monday)
-  const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
-  const daysInMonth  = new Date(calendarYear, calendarMonth + 1, 0).getDate();
-
-  const todayIso = todayStr();
-  const cells = [];
-
-  // Empty cells before day 1
-  for (let i = 0; i < firstWeekday; i++) {
-    cells.push('<div class="h-9"></div>');
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(calendarYear, calendarMonth, day);
-    const iso  = date.toISOString().slice(0, 10);
-    const hasItems  = !!itemsByDate[iso];
-    const isToday   = iso === todayIso;
-    const isSelected = iso === calendarSelectedIsoDate;
-
-    let baseClasses =
-      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
-
-    if (isSelected) {
-      baseClasses += 'bg-lime-400 text-black font-semibold';
-    } else if (isToday) {
-      baseClasses += 'border border-lime-300/70 text-lime-200';
-    } else if (hasItems) {
-      baseClasses += 'bg-white/10 border border-white/20';
-    } else {
-      baseClasses += 'text-white/50';
-    }
-
-    const dot = hasItems
-      ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
-      : '';
-
-    cells.push(`
-      <button
-        class="${baseClasses} relative"
-        onclick="selectCalendarDate('${iso}')"
-      >
-        ${day}
-        ${dot}
-      </button>
-    `);
-  }
-
-  gridEl.innerHTML = cells.join('');
-
-  // Update selected date label
-  if (selectedLabelEl && calendarSelectedIsoDate) {
-    selectedLabelEl.textContent = formatIsoToNice(calendarSelectedIsoDate);
-  }
-
-  // Show entries for the selected day
-  renderCalendarEntriesForSelectedDate();
-}
-
-function selectCalendarDate(isoDate) {
-  calendarSelectedIsoDate = isoDate;
-  renderCalendar();
-}
-
-function changeCalendarMonth(delta) {
-  calendarMonth += delta;
-  if (calendarMonth < 0) {
-    calendarMonth = 11;
-    calendarYear -= 1;
-  } else if (calendarMonth > 11) {
-    calendarMonth = 0;
-    calendarYear += 1;
-  }
-
-  // If selected date is not in this month, snap to first of month
-  const monthString = String(calendarMonth + 1).padStart(2, '0');
-  if (!calendarSelectedIsoDate.startsWith(`${calendarYear}-${monthString}`)) {
-    const firstIso = new Date(calendarYear, calendarMonth, 1).toISOString().slice(0, 10);
-    calendarSelectedIsoDate = firstIso;
-  }
-
-  renderCalendar();
-}
 
 function renderCalendarEntriesForSelectedDate() {
   const container = document.getElementById('calendar-entries');
@@ -2413,13 +2589,13 @@ function saveGratitudeEntryWithCustomXP(xpAmount) {
     }
 
     // Initial load
-    window.onload = function () {
+     window.onload = function () {
       loadData();
       updateGreeting();
       setDailyQuote();
+      setDailyFact();
+      setDailyReflectionTip();
       showSection('today');
-
-
 
       const xpTargetInput = document.getElementById('setting-xp-target');
       const rewardInput   = document.getElementById('setting-reward-text');
@@ -2429,6 +2605,8 @@ function saveGratitudeEntryWithCustomXP(xpAmount) {
       setReflectionType('journal');
       renderReflectionsEntries();
     };
+
+
 
   </script>
 </body>
