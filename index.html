@@ -108,6 +108,14 @@
     body.theme-light .text-white\/50 {
       color: #6b7280;
     }
+
+     body.theme-light #today-section .text-white\/80 {
+     color: #111827;  /* dark slate for About & Insight text */
+     }
+
+    body.theme-light #today-section .text-white\/70 {
+    color: #374151;  /* slightly darker for Insight "Try this today" */
+    }
     body.theme-light #daily-quote {
       color: #166534;
     }
@@ -264,7 +272,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
 <!-- App overview -->
 <div class="glass-card rounded-3xl p-7">
   <h3 class="font-medium mb-2">About MyDay2Day</h3>
-  <p class="text-sm text-white/80 space-y-1">
+  <p class="text-xs text-white/60 space-y-1">
     <span class="block">
       MyDay2Day helps you turn scattered days into steady progress.
     </span>
@@ -279,6 +287,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     </span>
   </p>
 </div>
+
 
 
       <div class="grid grid-cols-2 gap-4">
@@ -347,14 +356,21 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
       <!-- Today’s Insight -->
       <div class="glass-card rounded-3xl p-7">
         <h3 class="font-medium mb-2">Today’s insight</h3>
-        <p id="insight-text" class="text-sm text-white/80 mb-3">
+         <p id="insight-text" class="text-xs text-white/60 mb-3">
           <!-- Filled by setDailyInsight() -->
         </p>
-        <p id="insight-try" class="text-xs text-white/70">
+        <p id="insight-try" class="text-xs text-white/60">
           <!-- Filled by setDailyInsight() -->
         </p>
       </div>
 
+      <!-- Today’s Reminders -->
+      <div class="glass-card rounded-3xl p-7">
+        <h3 class="font-medium mb-2">Today’s reminders</h3>
+        <div id="today-reminders" class="space-y-2 text-sm">
+          <!-- Filled by renderTodayReminders() -->
+        </div>
+      </div>
 
 
       <!-- Most Important Tasks -->
@@ -661,14 +677,23 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
       </select>
     </div>
 
-    <!-- Calendar days -->
+       <!-- Calendar days -->
     <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
 
-    <!-- Selected date & entries -->
-    <div id="calendar-selected-date" class="text-xs text-white/70 mb-2"></div>
+    <!-- Selected date, + Reminder button & entries -->
+    <div class="flex items-center justify-between mb-2 text-xs text-white/70">
+      <div id="calendar-selected-date"></div>
+      <button
+        onclick="addReminderForSelectedDate()"
+        class="px-3 py-1.5 rounded-2xl border border-white/25 text-[11px]"
+      >
+        + Reminder
+      </button>
+    </div>
     <div id="calendar-entries" class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"></div>
   </div>
 </div>
+
 
 
 
@@ -802,6 +827,7 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     let timerInterval = null;
     let timeLeft = 25 * 60;
     let currentReflectionType = 'journal'; // 'journal' or 'gratitude'
+    let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -993,10 +1019,17 @@ if (storedGratitudeTemplates) {
   ];
 }
 
+// after gratitudeTemplates have been set
 
-      const storedStreak = localStorage.getItem('mydaystreak');
-      streak = storedStreak ? parseInt(storedStreak, 10) : 0;
-      lastEngagementDate = localStorage.getItem('mydayengagementdate');
+// after gratitudeTemplates have been set
+const storedReminders = localStorage.getItem('mydayreminders');
+reminders = storedReminders ? JSON.parse(storedReminders) : {};
+
+// Streak and last engagement date
+const storedStreak = localStorage.getItem('mydaystreak');
+streak = storedStreak ? parseInt(storedStreak, 10) : 0;
+lastEngagementDate = localStorage.getItem('mydayengagementdate');
+
 
       const storedTheme = localStorage.getItem('mydaytheme');
       theme = storedTheme || 'dark';
@@ -1067,6 +1100,7 @@ if (storedGratitudeTemplates) {
       localStorage.setItem('mydayengagementdate', lastEngagementDate || '');
       localStorage.setItem('mydaytheme', theme);
       localStorage.setItem('mydayaccent', accent);
+      localStorage.setItem('mydayreminders', JSON.stringify(reminders));
     }
 
    function updateStats() {
@@ -2666,6 +2700,71 @@ function renderCalendar() {
   renderCalendarEntriesForSelectedDate();
 }
 
+function addReminderForSelectedDate() {
+  if (!calendarSelectedIsoDate) return;
+
+  const text = prompt("Reminder for this day:");
+  if (!text || !text.trim()) return;
+
+  const trimmed = text.trim();
+
+  if (!reminders[calendarSelectedIsoDate]) {
+    reminders[calendarSelectedIsoDate] = [];
+  }
+
+  reminders[calendarSelectedIsoDate].push({
+    id: 'rem_' + Date.now(),
+    text: trimmed
+  });
+
+  saveData();
+  renderCalendarEntriesForSelectedDate();
+  renderTodayReminders();
+}
+
+function deleteReminder(dateIso, id) {
+  if (!reminders[dateIso]) return;
+
+  reminders[dateIso] = reminders[dateIso].filter(r => r.id !== id);
+  if (reminders[dateIso].length === 0) {
+    delete reminders[dateIso];
+  }
+
+  saveData();
+  renderCalendarEntriesForSelectedDate();
+  if (dateIso === todayStr()) {
+    renderTodayReminders();
+  }
+}
+
+function renderTodayReminders() {
+  const container = document.getElementById('today-reminders');
+  if (!container) return;
+
+  const todayIso = todayStr();
+  const list = reminders[todayIso] || [];
+
+  if (!list.length) {
+    container.innerHTML =
+      '<p class="text-xs text-white/60">No reminders set for today yet.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(r => `
+    <div class="flex items-start justify-between gap-3 text-sm">
+      <div class="flex-1">
+        <p class="text-white/90">${r.text}</p>
+      </div>
+      <button
+        onclick="deleteReminder('${todayIso}','${r.id}')"
+        class="text-[11px] text-white/60 hover:text-red-400 px-2 py-1 rounded-2xl border border-white/25"
+      >
+        Delete
+      </button>
+    </div>
+  `).join('<div class="h-1"></div>');
+}
+
 
 function renderCalendarEntriesForSelectedDate() {
   const container = document.getElementById('calendar-entries');
@@ -2674,7 +2773,7 @@ function renderCalendarEntriesForSelectedDate() {
   const itemsByDate = buildCalendarItems();
   const items = itemsByDate[calendarSelectedIsoDate] || [];
 
-  // Apply filter
+  // Apply filter to tasks / journal / gratitude
   const filtered = items.filter(item => {
     switch (calendarFilter) {
       case 'journal':
@@ -2693,12 +2792,8 @@ function renderCalendarEntriesForSelectedDate() {
     }
   });
 
-  if (filtered.length === 0) {
-    container.innerHTML = '<p class="text-white/50 text-xs">No entries for this view on this day.</p>';
-    return;
-  }
-
-  container.innerHTML = filtered.map(item => `
+  // Existing entries HTML
+  const entriesHtml = filtered.map(item => `
     <div class="flex gap-3 items-start">
       <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
         ${item.type}
@@ -2709,7 +2804,39 @@ function renderCalendarEntriesForSelectedDate() {
       </div>
     </div>
   `).join('<div class="h-2"></div>');
+
+  // Reminders for this day (always shown regardless of filter)
+  const dayReminders = reminders[calendarSelectedIsoDate] || [];
+  const reminderHtml = dayReminders.map(r => `
+    <div class="flex gap-3 items-start">
+      <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-purple-500/20 text-purple-200 border-purple-400/60">
+        Reminder
+      </span>
+      <div class="flex-1">
+        <p class="text-sm text-white/90">${r.text}</p>
+      </div>
+      <button
+        onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
+        class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+        title="Delete reminder"
+      >
+        ✕
+      </button>
+    </div>
+  `).join('<div class="h-2"></div>');
+
+  if (filtered.length === 0 && dayReminders.length === 0) {
+    container.innerHTML = '<p class="text-white/50 text-xs">No entries or reminders on this day.</p>';
+    return;
+  }
+
+  const parts = [];
+  if (entriesHtml) parts.push(entriesHtml);
+  if (reminderHtml) parts.push(reminderHtml);
+
+  container.innerHTML = parts.join('<div class="h-2"></div>');
 }
+
 
 
     function renderTemplateSelectors() {
@@ -3024,8 +3151,9 @@ window.onload = function () {
   loadData();
   updateGreeting();
   setDailyQuote();
-  setDailyInsight();      // new insight card
+  setDailyInsight();
   setDailyReflectionTip();
+  renderTodayReminders();   // ← new
   showSection('today');
 
   const xpTargetInput = document.getElementById('setting-xp-target');
@@ -3039,6 +3167,7 @@ window.onload = function () {
   setReflectionType('journal');
   renderReflectionsEntries();
 };
+
 
 
 
