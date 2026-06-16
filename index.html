@@ -448,6 +448,29 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
           Set a short, distraction‑free block and give one task your full attention.  
           Every finished session earns XP and trains your focus, one calm sprint at a time.
         </p>
+
+  <!-- Goals for this focus session -->
+  <div class="mb-4">
+    <div class="flex gap-2 mb-2 text-xs">
+      <input
+        id="focus-goal-input"
+        type="text"
+        class="flex-1 bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+        placeholder="Add a focus goal for this session..."
+        onkeypress="if(event.key==='Enter') addFocusGoal()"
+      >
+      <button
+        onclick="addFocusGoal()"
+        class="px-3 py-2 rounded-2xl border border-white/25 text-[11px]"
+      >
+        + Add
+      </button>
+    </div>
+    <div id="focus-goals" class="space-y-1 text-xs">
+      <!-- Filled by renderFocusGoals() -->
+    </div>
+  </div>
+
         <div class="flex gap-3 mb-4">
           <div class="flex-1">
             <div class="flex gap-2 mb-2">
@@ -828,6 +851,8 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     let timeLeft = 25 * 60;
     let currentReflectionType = 'journal'; // 'journal' or 'gratitude'
     let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
+    let focusGoals = [];  // goals for the current focus session
+
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -881,6 +906,66 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
 }
 
 
+function addFocusGoal() {
+  const input = document.getElementById('focus-goal-input');
+  if (!input) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  focusGoals.push({
+    id: 'fg_' + Date.now(),
+    text,
+    done: false
+  });
+
+  input.value = '';
+  renderFocusGoals();
+}
+
+function toggleFocusGoal(id) {
+  const goal = focusGoals.find(g => g.id === id);
+  if (!goal) return;
+  goal.done = !goal.done;
+  renderFocusGoals();
+}
+
+function deleteFocusGoal(id) {
+  focusGoals = focusGoals.filter(g => g.id !== id);
+  renderFocusGoals();
+}
+
+function renderFocusGoals() {
+  const container = document.getElementById('focus-goals');
+  if (!container) return;
+
+  if (!focusGoals.length) {
+    container.innerHTML =
+      '<p class="text-[11px] text-white/50">No goals set for this focus session yet.</p>';
+    return;
+  }
+
+  container.innerHTML = focusGoals.map(g => `
+    <div class="flex items-center gap-2">
+      <input
+        type="checkbox"
+        class="w-4 h-4 accent-lime-400"
+        ${g.done ? 'checked' : ''}
+        onchange="toggleFocusGoal('${g.id}')"
+      >
+      <span class="${g.done ? 'line-through text-white/60' : 'text-white/80'} flex-1">
+        ${g.text}
+      </span>
+      <button
+        onclick="deleteFocusGoal('${g.id}')"
+        class="text-[11px] text-white/50 hover:text-red-400"
+        title="Remove goal"
+      >
+        ✕
+      </button>
+    </div>
+  `).join('<div class="h-1"></div>');
+}
 
 
     function loadData() {
@@ -1209,11 +1294,18 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
         timeLeft--;
         updateTimerDisplay();
         if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-          addXP(xpReward, true);
-          alert(`Focus session complete! +${xpReward} XP earned 🎉`);
-        }
+  clearInterval(timerInterval);
+  timerInterval = null;
+  addXP(xpReward, true);
+
+  const totalGoals = focusGoals.length;
+  const doneGoals = focusGoals.filter(g => g.done).length;
+  const goalsLine = totalGoals
+    ? `\nFocus goals completed: ${doneGoals} of ${totalGoals}.`
+    : '';
+
+  alert(`Focus session complete! +${xpReward} XP earned 🎉${goalsLine}`);
+}
       }, 1000);
     }
 
@@ -1224,12 +1316,17 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       document.getElementById('timer-display').textContent = `${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
 
-    function resetTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
-      timeLeft = (parseInt(document.getElementById('custom-minutes').value) || 25) * 60;
-      updateTimerDisplay();
-    }
+function resetTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  timeLeft = (parseInt(document.getElementById('custom-minutes').value) || 25) * 60;
+  updateTimerDisplay();
+
+  // Reset focus goals to “not done” for a fresh session, but keep the list
+  focusGoals.forEach(g => g.done = false);
+  renderFocusGoals();
+}
+
 
     // Fireworks
     function maybeShowRewardFireworks() {
@@ -3153,7 +3250,7 @@ window.onload = function () {
   setDailyQuote();
   setDailyInsight();
   setDailyReflectionTip();
-  renderTodayReminders();   // ← new
+  renderTodayReminders();
   showSection('today');
 
   const xpTargetInput = document.getElementById('setting-xp-target');
@@ -3166,7 +3263,9 @@ window.onload = function () {
 
   setReflectionType('journal');
   renderReflectionsEntries();
+  renderFocusGoals();          // ← add this line
 };
+
 
 
 
