@@ -165,6 +165,24 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
   color: #e5e7eb;
 }
 
+/* Fix calendar entry modal contrast in light mode */
+body.theme-light #calendar-entry-modal {
+  color: #e5e7eb; /* default text inside modal = light */
+}
+
+body.theme-light #calendar-entry-modal .bg-slate-900 {
+  background-color: #020617; /* keep the card dark for contrast */
+  border-color: rgba(148,163,184,0.6);
+}
+
+/* Override the global light-mode greys for this dark modal */
+body.theme-light #calendar-entry-modal .text-white\/50,
+body.theme-light #calendar-entry-modal .text-white\/60,
+body.theme-light #calendar-entry-modal .text-white\/70,
+body.theme-light #calendar-entry-modal .text-white\/80 {
+  color: #e5e7eb;
+}
+
     /* Fireworks overlay */
     #fireworks-overlay {
       position: fixed;
@@ -1308,7 +1326,7 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       renderTemplateSelectors();
       updateHomeStats();
       updateRewardUI();
-      maybeShowRewardFireworks();
+
 
 
     }
@@ -1342,7 +1360,7 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
 
     }
 
-   function updateStats() {
+function updateStats() {
   const todayXpEl  = document.getElementById('today-xp');
   const streakEl   = document.getElementById('streak-display');
   const xpTargetEl = document.getElementById('xp-target-display');
@@ -1350,9 +1368,8 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
   if (todayXpEl)  todayXpEl.textContent = xpToday;
   if (streakEl)   streakEl.textContent  = "🔥 " + streak;
   if (xpTargetEl) xpTargetEl.textContent = xpTarget;
-
-  maybeShowRewardFireworks();
 }
+
 
 
     function updateHomeStats() {
@@ -1395,17 +1412,39 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       saveData();
     }
 
-    function addXP(amount, countAsEngagement = true) {
-      xp += amount;
-      const today = todayStr();
-      if (xpTodayDate !== today) {
-        xpToday = 0;
-        xpTodayDate = today;
-      }
-      xpToday += amount;
-      updateStats();
-      if (countAsEngagement) registerEngagement(); else saveData();
-    }
+function addXP(amount, countAsEngagement = true) {
+  const today = todayStr();
+
+  // Reset daily XP if stored date is from a previous day
+  if (xpTodayDate !== today) {
+    xpToday = 0;
+    xpTodayDate = today;
+  }
+
+  const before = xpToday;   // XP today *before* this change
+
+  // Update totals
+  xp += amount;
+  xpToday += amount;
+
+  updateStats();
+
+  // Only trigger fireworks once, the moment you *cross* the target
+  if (
+    before < xpTarget &&             // was below target
+    xpToday >= xpTarget &&           // now at or above target
+    xpTarget > 0 &&                  // only if a real target
+    rewardShownDate !== today        // not already shown today
+  ) {
+    rewardShownDate = today;
+    saveData();
+    showFireworksOverlay();
+  } else {
+    if (countAsEngagement) registerEngagement();
+    else saveData();
+  }
+}
+
 
     function resetAllData() {
       if (!confirm("This will clear XP, tasks, journal and gratitude on this device. Continue?")) return;
