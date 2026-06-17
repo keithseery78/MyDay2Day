@@ -705,107 +705,18 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
 
     <!-- Selected date, + Reminder button & entries -->
-<div class="flex items-center justify-between mb-2 text-xs text-white/70">
-  <div id="calendar-selected-date"></div>
-  <div class="flex gap-2">
-    <button
-      onclick="openCalendarEntryModal('reminder')"
-      class="px-3 py-1.5 rounded-2xl border border-white/25 text-[11px]"
-    >
-      + Reminder
-    </button>
-    <button
-      onclick="openCalendarEntryModal('event')"
-      class="px-3 py-1.5 rounded-2xl border border-sky-400/60 text-[11px] text-sky-200"
-    >
-      + Event
-    </button>
-  </div>
-</div>
-
-
-<!-- Calendar entry modal (event / reminder) -->
-<div
-  id="calendar-entry-modal"
-  class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
->
-  <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h3 id="calendar-entry-title" class="text-sm font-medium">New event</h3>
+    <div class="flex items-center justify-between mb-2 text-xs text-white/70">
+      <div id="calendar-selected-date"></div>
       <button
-        onclick="closeCalendarEntryModal()"
-        class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+        onclick="addReminderForSelectedDate()"
+        class="px-3 py-1.5 rounded-2xl border border-white/25 text-[11px]"
       >
-        Close
+        + Reminder
       </button>
     </div>
-
-    <!-- Type label -->
-    <div class="text-[11px] text-white/60 mb-2" id="calendar-entry-type-hint">
-      Create a calendar event with date and time.
-    </div>
-
-    <div class="space-y-3 text-xs">
-      <!-- Date -->
-      <div>
-        <label class="block mb-1 text-white/70">Date</label>
-        <input
-          id="entry-date"
-          type="date"
-          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-        >
-      </div>
-
-      <!-- Time range (events) or single time (reminders) -->
-      <div id="entry-time-row" class="flex gap-2">
-        <div class="flex-1">
-          <label class="block mb-1 text-white/70" id="entry-start-label">Start time</label>
-          <input
-            id="entry-start"
-            type="time"
-            class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-          >
-        </div>
-        <div class="flex-1" id="entry-end-wrapper">
-          <label class="block mb-1 text-white/70">End time (optional)</label>
-          <input
-            id="entry-end"
-            type="time"
-            class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-          >
-        </div>
-      </div>
-
-      <!-- Title / text -->
-      <div>
-        <label class="block mb-1 text-white/70" id="entry-title-label">Event title</label>
-        <input
-          id="entry-title"
-          type="text"
-          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-          placeholder="e.g. Deep work block, appointment, meeting"
-        >
-      </div>
-
-      <!-- Notes (events only) -->
-      <div id="entry-notes-wrapper">
-        <label class="block mb-1 text-white/70">Notes (optional)</label>
-        <textarea
-          id="entry-notes"
-          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs h-20 resize-none"
-          placeholder="Details, location, or anything you want to remember."
-        ></textarea>
-      </div>
-    </div>
-
-    <button
-      onclick="saveCalendarEntryFromModal()"
-      class="mt-4 w-full btn-gradient text-black font-semibold py-2.5 rounded-2xl text-sm"
-    >
-      Save
-    </button>
-  </div> <!-- close .glass-card -->
-</div>   <!-- close #calendar-section -->
+    <div id="calendar-entries" class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"></div>
+  </div>
+</div>
 
 
 
@@ -941,10 +852,8 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     let timeLeft = 25 * 60;
     let currentReflectionType = 'journal'; // 'journal' or 'gratitude'
     let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
-    let events = {};      // { "YYYY-MM-DD": [ { id, time, title, notes } ] }
-
     let focusGoals = [];  // goals for the current focus session
-    let calendarEntryMode = 'event'; // 'event' or 'reminder'
+
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -1202,10 +1111,6 @@ if (storedGratitudeTemplates) {
 const storedReminders = localStorage.getItem('mydayreminders');
 reminders = storedReminders ? JSON.parse(storedReminders) : {};
 
-const storedEvents = localStorage.getItem('mydayevents');
-events = storedEvents ? JSON.parse(storedEvents) : {};
-
-
 // Streak and last engagement date
 const storedStreak = localStorage.getItem('mydaystreak');
 streak = storedStreak ? parseInt(storedStreak, 10) : 0;
@@ -1282,8 +1187,6 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       localStorage.setItem('mydaytheme', theme);
       localStorage.setItem('mydayaccent', accent);
       localStorage.setItem('mydayreminders', JSON.stringify(reminders));
-      localStorage.setItem('mydayevents', JSON.stringify(events));
-
     }
 
    function updateStats() {
@@ -2920,123 +2823,6 @@ function renderCalendar() {
   renderCalendarEntriesForSelectedDate();
 }
 
-function openCalendarEntryModal(mode) {
-  calendarEntryMode = mode === 'reminder' ? 'reminder' : 'event';
-
-  const modal      = document.getElementById('calendar-entry-modal');
-  const titleEl    = document.getElementById('calendar-entry-title');
-  const hintEl     = document.getElementById('calendar-entry-type-hint');
-  const dateInput  = document.getElementById('entry-date');
-  const startInput = document.getElementById('entry-start');
-  const endInput   = document.getElementById('entry-end');
-  const titleInput = document.getElementById('entry-title');
-  const notesArea  = document.getElementById('entry-notes');
-
-  const endWrapper   = document.getElementById('entry-end-wrapper');
-  const notesWrapper = document.getElementById('entry-notes-wrapper');
-  const startLabel   = document.getElementById('entry-start-label');
-  const titleLabel   = document.getElementById('entry-title-label');
-
-  if (!modal) return;
-
-  // Prefill date with selected day or today
-  const iso = calendarSelectedIsoDate || todayStr();
-  dateInput.value = iso;
-
-  // Reset fields
-  startInput.value = '';
-  endInput.value   = '';
-  titleInput.value = '';
-  notesArea.value  = '';
-
-  if (calendarEntryMode === 'event') {
-    titleEl.textContent  = 'New event';
-    hintEl.textContent   = 'Choose a date and time for your event.';
-    startLabel.textContent = 'Start time';
-    titleLabel.textContent = 'Event title';
-    endWrapper.classList.remove('hidden');
-    notesWrapper.classList.remove('hidden');
-  } else {
-    titleEl.textContent  = 'New reminder';
-    hintEl.textContent   = 'Choose a date and (optionally) a time for your reminder.';
-    startLabel.textContent = 'Time (optional)';
-    titleLabel.textContent = 'Reminder text';
-    endWrapper.classList.add('hidden');
-    notesWrapper.classList.add('hidden');
-  }
-
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-
-  // Focus first field
-  setTimeout(() => titleInput.focus(), 20);
-}
-
-function closeCalendarEntryModal() {
-  const modal = document.getElementById('calendar-entry-modal');
-  if (!modal) return;
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
-
-function saveCalendarEntryFromModal() {
-  const dateInput  = document.getElementById('entry-date');
-  const startInput = document.getElementById('entry-start');
-  const endInput   = document.getElementById('entry-end');
-  const titleInput = document.getElementById('entry-title');
-  const notesArea  = document.getElementById('entry-notes');
-
-  let dateIso = (dateInput.value || '').trim();
-  if (!dateIso) {
-    dateIso = calendarSelectedIsoDate || todayStr();
-  }
-
-  // Normalise date to YYYY-MM-DD
-  if (dateIso.length > 10) dateIso = dateIso.slice(0, 10);
-
-  const start = (startInput.value || '').trim();
-  const end   = (endInput.value || '').trim();
-  const title = (titleInput.value || '').trim();
-  const notes = (notesArea ? notesArea.value : '').trim();
-
-  if (!title) {
-    alert(calendarEntryMode === 'event'
-      ? 'Please enter an event title.'
-      : 'Please enter some reminder text.');
-    return;
-  }
-
-  if (calendarEntryMode === 'event') {
-    if (!events[dateIso]) events[dateIso] = [];
-    events[dateIso].push({
-      id: 'ev_' + Date.now(),
-      start: start || '',
-      end: end || '',
-      title,
-      notes
-    });
-  } else {
-    if (!reminders[dateIso]) reminders[dateIso] = [];
-    reminders[dateIso].push({
-      id: 'rem_' + Date.now(),
-      time: start || '',
-      text: title
-    });
-  }
-
-  saveData();
-
-  // If user chose another date, move selection there so they see it
-  calendarSelectedIsoDate = dateIso;
-  renderCalendar();
-  renderCalendarEntriesForSelectedDate();
-  renderTodayReminders();
-  renderTodayEvents();
-
-  closeCalendarEntryModal();
-}
-
-
 function addReminderForSelectedDate() {
   if (!calendarSelectedIsoDate) return;
 
@@ -3058,58 +2844,6 @@ function addReminderForSelectedDate() {
   renderCalendarEntriesForSelectedDate();
   renderTodayReminders();
 }
-
-function addEventForSelectedDate() {
-  if (!calendarSelectedIsoDate) return;
-
-  const title = prompt("Event title:");
-  if (!title || !title.trim()) return;
-  const trimmedTitle = title.trim();
-
-  const time = prompt("Time (HH:MM, 24‑hour):", "09:00");
-  if (!time || !time.trim()) return;
-
-  const timeTrimmed = time.trim();
-  // Very light validation, you can tighten this later if you want
-  const timeMatch = /^([01]\d|2[0-3]):([0-5]\d)$/.test(timeTrimmed);
-  if (!timeMatch) {
-    alert("Please enter time as HH:MM (24‑hour), for example 09:30 or 17:05.");
-    return;
-  }
-
-  const notes = prompt("Optional notes for this event (or leave blank):") || "";
-
-  if (!events[calendarSelectedIsoDate]) {
-    events[calendarSelectedIsoDate] = [];
-  }
-
-  events[calendarSelectedIsoDate].push({
-    id: 'ev_' + Date.now(),
-    time: timeTrimmed,
-    title: trimmedTitle,
-    notes: notes.trim()
-  });
-
-  saveData();
-  renderCalendarEntriesForSelectedDate();
-  renderTodayEvents();
-}
-
-function deleteEvent(dateIso, id) {
-  if (!events[dateIso]) return;
-
-  events[dateIso] = events[dateIso].filter(ev => ev.id !== id);
-  if (events[dateIso].length === 0) {
-    delete events[dateIso];
-  }
-
-  saveData();
-  renderCalendarEntriesForSelectedDate();
-  if (dateIso === todayStr()) {
-    renderTodayEvents();
-  }
-}
-
 
 function deleteReminder(dateIso, id) {
   if (!reminders[dateIso]) return;
@@ -3139,57 +2873,19 @@ function renderTodayReminders() {
     return;
   }
 
-  container.innerHTML = list.map(r => {
-    const timeLabel = r.time ? `<span class="text-[11px] text-white/60 mr-2">${r.time}</span>` : '';
-    return `
-      <div class="flex items-start justify-between gap-3 text-sm">
-        <div class="flex-1">
-          ${timeLabel}<span class="text-white/90">${r.text}</span>
-        </div>
-        <button
-          onclick="deleteReminder('${todayIso}','${r.id}')"
-          class="text-[11px] text-white/60 hover:text-red-400 px-2 py-1 rounded-2xl border border-white/25"
-        >
-          Delete
-        </button>
-      </div>
-    `;
-  }).join('<div class="h-1"></div>');
-}
-
-
-
-function renderTodayEvents() {
-  const container = document.getElementById('today-events');
-  if (!container) return;
-
-  const todayIso = todayStr();
-  const list = events[todayIso] || [];
-
-  if (list.length === 0) {
-    container.innerHTML = '<p class="text-xs text-white/60">No events scheduled for today yet.</p>';
-    return;
-  }
-
-  // sort by time
-  list.sort((a, b) => a.time.localeCompare(b.time));
-
-  container.innerHTML = list.map(ev => `
-    <div class="flex items-start justify-between text-sm">
-      <div>
-        <div class="text-[11px] text-white/60">${ev.time}</div>
-        <div>${ev.title}</div>
-        ${ev.notes ? `<div class="text-[11px] text-white/60">${ev.notes}</div>` : ''}
+  container.innerHTML = list.map(r => `
+    <div class="flex items-start justify-between gap-3 text-sm">
+      <div class="flex-1">
+        <p class="text-white/90">${r.text}</p>
       </div>
       <button
-        onclick="deleteEvent('${todayIso}','${ev.id}')"
-        class="ml-3 p-1 text-white/50 hover:text-red-400 text-[11px]"
-        title="Delete event"
+        onclick="deleteReminder('${todayIso}','${r.id}')"
+        class="text-[11px] text-white/60 hover:text-red-400 px-2 py-1 rounded-2xl border border-white/25"
       >
-        ✕
+        Delete
       </button>
     </div>
-  `).join('<div class="h-2"></div>');
+  `).join('<div class="h-1"></div>');
 }
 
 
@@ -3219,7 +2915,7 @@ function renderCalendarEntriesForSelectedDate() {
     }
   });
 
-  // Tasks / journal / gratitude entries
+  // Existing entries HTML
   const entriesHtml = filtered.map(item => `
     <div class="flex gap-3 items-start">
       <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
@@ -3232,77 +2928,39 @@ function renderCalendarEntriesForSelectedDate() {
     </div>
   `).join('<div class="h-2"></div>');
 
-  // Reminders for this day
+  // Reminders for this day (always shown regardless of filter)
   const dayReminders = reminders[calendarSelectedIsoDate] || [];
-  const reminderHtml = dayReminders.map(r => {
-    const timeLabel = r.time ? `<span class="text-[11px] text-white/60 mr-1">${r.time}</span>` : '';
-    return `
-      <div class="flex gap-3 items-start">
-        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-purple-500/20 text-purple-200 border-purple-400/60">
-          Reminder
-        </span>
-        <div class="flex-1">
-          <p class="text-sm text-white/90">${timeLabel}${r.text}</p>
-        </div>
-        <button
-          onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
-          class="p-1 text-white/50 hover:text-red-400 text-[11px]"
-          title="Delete reminder"
-        >
-          ✕
-        </button>
+  const reminderHtml = dayReminders.map(r => `
+    <div class="flex gap-3 items-start">
+      <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-purple-500/20 text-purple-200 border-purple-400/60">
+        Reminder
+      </span>
+      <div class="flex-1">
+        <p class="text-sm text-white/90">${r.text}</p>
       </div>
-    `;
-  }).join('<div class="h-2"></div>');
+      <button
+        onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
+        class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+        title="Delete reminder"
+      >
+        ✕
+      </button>
+    </div>
+  `).join('<div class="h-2"></div>');
 
-  // Events for this day
-  const dayEvents = events[calendarSelectedIsoDate] || [];
-  dayEvents.sort((a, b) => (a.start || a.time || '').localeCompare(b.start || b.time || ''));
-
-  const eventsHtml = dayEvents.map(ev => {
-    const start = ev.start || ev.time || '';
-    const end   = ev.end ? `–${ev.end}` : '';
-    const timeLabel = start ? `${start}${end ? end : ''}` : '';
-
-    const notesBlock = ev.notes
-      ? `<p class="text-sm text-white/90 whitespace-pre-line">${ev.notes}</p>`
-      : '';
-
-    return `
-      <div class="flex gap-3 items-start">
-        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-sky-500/20 text-sky-200 border-sky-400/60">
-          Event
-        </span>
-        <div class="flex-1">
-          <div class="text-[11px] text-white/70 mb-1">
-            ${timeLabel ? timeLabel + ' · ' : ''}${ev.title}
-          </div>
-          ${notesBlock}
-        </div>
-        <button
-          onclick="deleteEvent('${calendarSelectedIsoDate}','${ev.id}')"
-          class="p-1 text-white/50 hover:text-red-400 text-[11px]"
-          title="Delete event"
-        >
-          ✕
-        </button>
-      </div>
-    `;
-  }).join('<div class="h-2"></div>');
-
-  // Nothing for this day
-  if (!entriesHtml && dayReminders.length === 0 && dayEvents.length === 0) {
-    container.innerHTML = '<p class="text-white/50 text-xs">No entries, reminders or events on this day.</p>';
+  if (filtered.length === 0 && dayReminders.length === 0) {
+    container.innerHTML = '<p class="text-white/50 text-xs">No entries or reminders on this day.</p>';
     return;
   }
 
   const parts = [];
-  if (entriesHtml)   parts.push(entriesHtml);
-  if (reminderHtml)  parts.push(reminderHtml);
-  if (eventsHtml)    parts.push(eventsHtml);
+  if (entriesHtml) parts.push(entriesHtml);
+  if (reminderHtml) parts.push(reminderHtml);
 
   container.innerHTML = parts.join('<div class="h-2"></div>');
 }
+
+
 
     function renderTemplateSelectors() {
       const journalSelect = document.getElementById('journal-template-select');
@@ -3619,7 +3277,6 @@ window.onload = function () {
   setDailyInsight();
   setDailyReflectionTip();
   renderTodayReminders();
-  renderTodayEvents();
   showSection('today');
 
   const xpTargetInput = document.getElementById('setting-xp-target');
