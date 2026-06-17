@@ -373,6 +373,14 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
         </div>
       </div>
 
+      <!-- Today’s Events -->
+      <div class="glass-card rounded-3xl p-7">
+        <h3 class="font-medium mb-2">Today’s events</h3>
+        <div id="today-events" class="space-y-2 text-sm">
+          <!-- Filled by renderTodayEvents() -->
+        </div>
+      </div>
+
 
       <!-- Most Important Tasks -->
       <div class="glass-card rounded-3xl p-7">
@@ -657,22 +665,50 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
 </p>
 
 
-    <!-- Month header -->
-    <div class="flex items-center justify-between mb-3 text-sm">
-      <button
-        class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
-        onclick="changeCalendarMonth(-1)"
-      >
-        ◀
-      </button>
-      <div id="calendar-month-label" class="font-medium"></div>
-      <button
-        class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
-        onclick="changeCalendarMonth(1)"
-      >
-        ▶
-      </button>
-    </div>
+   <!-- Month header -->
+<div class="flex items-center justify-between mb-3 text-sm">
+  <button
+    class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
+    onclick="changeCalendarMonth(-1)"
+  >
+    ◀
+  </button>
+
+  <div id="calendar-month-label" class="font-medium"></div>
+
+  <button
+    class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
+    onclick="changeCalendarMonth(1)"
+  >
+    ▶
+  </button>
+</div>
+
+<!-- View mode toggle (separate from the arrows) -->
+<div class="flex gap-2 mb-2 text-[11px]">
+  <button
+    id="calendar-view-btn-day"
+    onclick="setCalendarViewMode('day')"
+    class="px-3 py-1.5 rounded-2xl border border-white/25 bg-black/40"
+  >
+    Day
+  </button>
+  <button
+    id="calendar-view-btn-week"
+    onclick="setCalendarViewMode('week')"
+    class="px-3 py-1.5 rounded-2xl border border-white/25 bg-black/40"
+  >
+    Week
+  </button>
+  <button
+    id="calendar-view-btn-month"
+    onclick="setCalendarViewMode('month')"
+    class="px-3 py-1.5 rounded-2xl border border-white/25 bg-lime-400 text-black"
+  >
+    Month
+  </button>
+</div>
+
 
     <!-- Weekdays -->
     <div class="grid grid-cols-7 text-[11px] text-white/60 mb-1">
@@ -704,130 +740,238 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
        <!-- Calendar days -->
     <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
 
-    <!-- Selected date, + Reminder button & entries -->
+           <!-- Selected date, + Reminder button & entries -->
     <div class="flex items-center justify-between mb-2 text-xs text-white/70">
       <div id="calendar-selected-date"></div>
-      <button
-        onclick="addReminderForSelectedDate()"
-        class="px-3 py-1.5 rounded-2xl border border-white/25 text-[11px]"
-      >
-        + Reminder
-      </button>
+      <div class="flex gap-2">
+        <button
+          onclick="openCalendarEntryModal('reminder')"
+          class="px-3 py-1.5 rounded-2xl border border-white/25 text-[11px]"
+        >
+          + Reminder
+        </button>
+        <button
+          onclick="openCalendarEntryModal('event')"
+          class="px-3 py-1.5 rounded-2xl border border-sky-400/60 text-[11px] text-sky-200"
+        >
+          + Event
+        </button>
+      </div>
     </div>
-    <div id="calendar-entries" class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"></div>
+
+    <!-- Month view entries list -->
+    <div id="calendar-view-month-entries"
+         class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1">
+      <div id="calendar-entries"></div>
+    </div>
+
+    <!-- Day view timeline -->
+    <div id="calendar-view-day"
+         class="hidden space-y-1 text-xs max-h-[40vh] overflow-y-auto pr-1 border-t border-white/10 pt-2">
+      <!-- Filled by renderDayView() -->
+    </div>
+
+    <!-- Week view columns -->
+    <div id="calendar-view-week"
+         class="hidden text-xs max-h-[40vh] overflow-x-auto overflow-y-auto pr-1 border-t border-white/10 pt-2">
+      <!-- Filled by renderWeekView() -->
+    </div>
+
+    <!-- Calendar entry modal (event / reminder) -->
+    <div
+      id="calendar-entry-modal"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
+    >
+      <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 id="calendar-entry-title" class="text-sm font-medium">New event</h3>
+          <button
+            onclick="closeCalendarEntryModal()"
+            class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="text-[11px] text-white/60 mb-2" id="calendar-entry-type-hint">
+          Create a calendar event with date and time.
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <!-- Date -->
+          <div>
+            <label class="block mb-1 text-white/70">Date</label>
+            <input
+              id="entry-date"
+              type="date"
+              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+            >
+          </div>
+
+          <!-- Time range (events) or single time (reminders) -->
+          <div id="entry-time-row" class="flex gap-2">
+            <div class="flex-1">
+              <label class="block mb-1 text-white/70" id="entry-start-label">Start time</label>
+              <input
+                id="entry-start"
+                type="time"
+                class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+              >
+            </div>
+            <div class="flex-1" id="entry-end-wrapper">
+              <label class="block mb-1 text-white/70">End time (optional)</label>
+              <input
+                id="entry-end"
+                type="time"
+                class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+              >
+            </div>
+          </div>
+
+          <!-- Title / text -->
+          <div>
+            <label class="block mb-1 text-white/70" id="entry-title-label">Event title</label>
+            <input
+              id="entry-title"
+              type="text"
+              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+              placeholder="e.g. Deep work block, appointment, meeting"
+            >
+          </div>
+
+          <!-- Notes (events only) -->
+          <div id="entry-notes-wrapper">
+            <label class="block mb-1 text-white/70">Notes (optional)</label>
+            <textarea
+              id="entry-notes"
+              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs h-20 resize-none"
+              placeholder="Details, location, or anything you want to remember."
+            ></textarea>
+          </div>
+        </div>
+
+        <button
+          onclick="saveCalendarEntryFromModal()"
+          class="mt-4 w-full btn-gradient text-black font-semibold py-2.5 rounded-2xl text-sm"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+
+  </div> <!-- close .glass-card -->
+</div>   <!-- close #calendar-section -->
+
+
+<!-- SETTINGS TAB -->
+<div id="settings-section" class="section hidden max-w-md mx-auto p-4">
+  <div class="space-y-6 pb-24">
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-2xl luxury-logo">Settings</h2>
+      <span class="text-xs text-white/50">MyDay2Day</span>
+    </div>
+
+    <!-- Personalisation -->
+    <div>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Personalisation</h3>
+      <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10">
+        <div class="flex items-center px-5 py-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-lime-300/80 to-emerald-500/70 flex items-center justify-center text-black">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4 7h16M4 17h16" stroke-linecap="round"/>
+                <circle cx="9" cy="7" r="2"/>
+                <circle cx="15" cy="17" r="2"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Theme</div>
+              <div class="text-xs text-white/60">Switch between dark and light modes</div>
+            </div>
+          </div>
+          <div class="ml-auto flex gap-2">
+            <button onclick="setTheme('dark')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">Dark</button>
+            <button onclick="setTheme('light')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">Light</button>
+          </div>
+        </div>
+
+        <div class="flex items-center px-5 py-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-300">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 3v18M5 10l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Accent colour</div>
+              <div class="text-xs text-white/60">Choose your highlight colour</div>
+            </div>
+          </div>
+          <div class="ml-auto flex gap-1.5">
+            <button onclick="setAccent('lime')" class="w-6 h-6 rounded-full border-2 border-white/40 bg-lime-400"></button>
+            <button onclick="setAccent('emerald')" class="w-6 h-6 rounded-full border-2 border-white/10 bg-emerald-400"></button>
+            <button onclick="setAccent('sky')" class="w-6 h-6 rounded-full border-2 border-white/10 bg-sky-400"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goals -->
+    <div>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Goals</h3>
+      <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10 text-sm">
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Daily XP target</div>
+            <div class="text-xs text-white/60">XP you aim to earn each day</div>
+          </div>
+          <input id="setting-xp-target" type="number" class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center">
+          <button onclick="saveXpTarget()" class="px-3 py-2 text-[11px] rounded-2xl border border-white/30">Save</button>
+        </div>
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Daily reward</div>
+            <div class="text-xs text-white/60">What you give yourself for hitting the XP target</div>
+          </div>
+          <input id="setting-reward-text" type="text" class="flex-1 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs" placeholder="e.g. Watch an episode of my favourite show">
+          <button onclick="saveRewardText()" class="px-3 py-2 text-[11px] rounded-2xl border border-white/30">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data -->
+    <div>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Data</h3>
+      <div class="glass-card rounded-3xl overflow-hidden">
+        <div class="flex flex-col px-5 py-4 bg-red-500/5 text-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-200">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M5 7h14" stroke-linecap="round"/>
+                  <path d="M10 11v6M14 11v6" stroke-linecap="round"/>
+                  <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-red-200">Reset all data</div>
+                <div class="text-xs text-red-200/80">Clear XP, tasks, journals and gratitude on this device</div>
+              </div>
+            </div>
+          </div>
+          <button onclick="resetAllData()" class="mt-3 self-start px-3 py-2 rounded-2xl border border-red-400/70 text-[11px] text-red-100">
+            Reset now
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 
 
-
-    <!-- SETTINGS TAB -->
-    <div id="settings-section" class="section hidden max-w-md mx-auto p-4">
-      <div class="space-y-6 pb-24">
-        <div class="flex items-baseline justify-between">
-          <h2 class="text-2xl luxury-logo">Settings</h2>
-          <span class="text-xs text-white/50">MyDay2Day</span>
-        </div>
-
-        <!-- Personalisation -->
-        <div>
-          <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Personalisation</h3>
-          <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10">
-            <div class="flex items-center px-5 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-lime-300/80 to-emerald-500/70 flex items-center justify-center text-black">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M4 7h16M4 17h16" stroke-linecap="round"/>
-                    <circle cx="9" cy="7" r="2"/>
-                    <circle cx="15" cy="17" r="2"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-sm font-medium">Theme</div>
-                  <div class="text-xs text-white/60">Switch between dark and light modes</div>
-                </div>
-              </div>
-              <div class="ml-auto flex gap-2">
-                <button onclick="setTheme('dark')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">Dark</button>
-                <button onclick="setTheme('light')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">Light</button>
-              </div>
-            </div>
-
-            <div class="flex items-center px-5 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-300">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <path d="M12 3v18M5 10l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-sm font-medium">Accent colour</div>
-                  <div class="text-xs text-white/60">Choose your highlight colour</div>
-                </div>
-              </div>
-              <div class="ml-auto flex gap-1.5">
-                <button onclick="setAccent('lime')" class="w-6 h-6 rounded-full border-2 border-white/40 bg-lime-400"></button>
-                <button onclick="setAccent('emerald')" class="w-6 h-6 rounded-full border-2 border-white/10 bg-emerald-400"></button>
-                <button onclick="setAccent('sky')" class="w-6 h-6 rounded-full border-2 border-white/10 bg-sky-400"></button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Goals -->
-        <div>
-          <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Goals</h3>
-          <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10 text-sm">
-            <div class="flex items-center px-5 py-4 gap-4">
-              <div class="flex-1">
-                <div class="text-sm font-medium">Daily XP target</div>
-                <div class="text-xs text-white/60">XP you aim to earn each day</div>
-              </div>
-              <input id="setting-xp-target" type="number" class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center">
-              <button onclick="saveXpTarget()" class="px-3 py-2 text-[11px] rounded-2xl border border-white/30">Save</button>
-            </div>
-            <div class="flex items-center px-5 py-4 gap-4">
-              <div class="flex-1">
-                <div class="text-sm font-medium">Daily reward</div>
-                <div class="text-xs text-white/60">What you give yourself for hitting the XP target</div>
-              </div>
-              <input id="setting-reward-text" type="text" class="flex-1 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs" placeholder="e.g. Watch an episode of my favourite show">
-              <button onclick="saveRewardText()" class="px-3 py-2 text-[11px] rounded-2xl border border-white/30">Save</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Data -->
-        <div>
-          <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Data</h3>
-          <div class="glass-card rounded-3xl overflow-hidden">
-            <div class="flex flex-col px-5 py-4 bg-red-500/5 text-sm">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-200">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <path d="M5 7h14" stroke-linecap="round"/>
-                      <path d="M10 11v6M14 11v6" stroke-linecap="round"/>
-                      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M9 7V4h6v3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <div class="text-sm font-medium text-red-200">Reset all data</div>
-                    <div class="text-xs text-red-200/80">Clear XP, tasks, journals and gratitude on this device</div>
-                  </div>
-                </div>
-              </div>
-              <button onclick="resetAllData()" class="mt-3 self-start px-3 py-2 rounded-2xl border border-red-400/70 text-[11px] text-red-100">
-                Reset now
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
 
   <script>
     // XP and streak state
@@ -852,8 +996,11 @@ body.theme-light #reflection-templates-modal .text-white\/70 {
     let timeLeft = 25 * 60;
     let currentReflectionType = 'journal'; // 'journal' or 'gratitude'
     let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
-    let focusGoals = [];  // goals for the current focus session
+    let events = {};      // { "YYYY-MM-DD": [ { id, time, title, notes } ] }
+    let calendarViewMode = 'month'; // 'day', 'week', or 'month'
 
+    let focusGoals = [];  // goals for the current focus session
+    let calendarEntryMode = 'event'; // 'event' or 'reminder'
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -1111,6 +1258,10 @@ if (storedGratitudeTemplates) {
 const storedReminders = localStorage.getItem('mydayreminders');
 reminders = storedReminders ? JSON.parse(storedReminders) : {};
 
+const storedEvents = localStorage.getItem('mydayevents');
+events = storedEvents ? JSON.parse(storedEvents) : {};
+
+
 // Streak and last engagement date
 const storedStreak = localStorage.getItem('mydaystreak');
 streak = storedStreak ? parseInt(storedStreak, 10) : 0;
@@ -1187,6 +1338,8 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       localStorage.setItem('mydaytheme', theme);
       localStorage.setItem('mydayaccent', accent);
       localStorage.setItem('mydayreminders', JSON.stringify(reminders));
+      localStorage.setItem('mydayevents', JSON.stringify(events));
+
     }
 
    function updateStats() {
@@ -2747,6 +2900,51 @@ function changeCalendarMonth(delta) {
   renderCalendar();
 }
 
+function setCalendarViewMode(mode) {
+  calendarViewMode = (mode === 'day' || mode === 'week') ? mode : 'month';
+
+  // Toggle button styles
+  const btnDay   = document.getElementById('calendar-view-btn-day');
+  const btnWeek  = document.getElementById('calendar-view-btn-week');
+  const btnMonth = document.getElementById('calendar-view-btn-month');
+
+  [btnDay, btnWeek, btnMonth].forEach(btn => {
+    if (!btn) return;
+    btn.classList.remove('bg-lime-400', 'text-black');
+    btn.classList.add('bg-black/40', 'text-white');
+  });
+
+  if (calendarViewMode === 'day' && btnDay) {
+    btnDay.classList.add('bg-lime-400', 'text-black');
+  } else if (calendarViewMode === 'week' && btnWeek) {
+    btnWeek.classList.add('bg-lime-400', 'text-black');
+  } else if (calendarViewMode === 'month' && btnMonth) {
+    btnMonth.classList.add('bg-lime-400', 'text-black');
+  }
+
+  // Toggle containers
+  const monthBox = document.getElementById('calendar-view-month-entries');
+  const dayBox   = document.getElementById('calendar-view-day');
+  const weekBox  = document.getElementById('calendar-view-week');
+
+  if (monthBox && dayBox && weekBox) {
+    monthBox.classList.add('hidden');
+    dayBox.classList.add('hidden');
+    weekBox.classList.add('hidden');
+
+    if (calendarViewMode === 'day') {
+      dayBox.classList.remove('hidden');
+      renderDayView();
+    } else if (calendarViewMode === 'week') {
+      weekBox.classList.remove('hidden');
+      renderWeekView();
+    } else {
+      monthBox.classList.remove('hidden');
+      renderCalendarEntriesForSelectedDate();
+    }
+  }
+}
+
 
 function renderCalendar() {
   const monthLabelEl      = document.getElementById('calendar-month-label');
@@ -2819,9 +3017,132 @@ function renderCalendar() {
     selectedLabelEl.textContent = formatIsoToNice(calendarSelectedIsoDate);
   }
 
-  // Show entries for the selected day
-  renderCalendarEntriesForSelectedDate();
+  // Show entries for the selected day in the active view
+  if (calendarViewMode === 'day') {
+    renderDayView();
+  } else if (calendarViewMode === 'week') {
+    renderWeekView();
+  } else {
+    renderCalendarEntriesForSelectedDate();
+  }
 }
+
+function openCalendarEntryModal(mode) {
+  calendarEntryMode = mode === 'reminder' ? 'reminder' : 'event';
+
+  const modal      = document.getElementById('calendar-entry-modal');
+  const titleEl    = document.getElementById('calendar-entry-title');
+  const hintEl     = document.getElementById('calendar-entry-type-hint');
+  const dateInput  = document.getElementById('entry-date');
+  const startInput = document.getElementById('entry-start');
+  const endInput   = document.getElementById('entry-end');
+  const titleInput = document.getElementById('entry-title');
+  const notesArea  = document.getElementById('entry-notes');
+
+  const endWrapper   = document.getElementById('entry-end-wrapper');
+  const notesWrapper = document.getElementById('entry-notes-wrapper');
+  const startLabel   = document.getElementById('entry-start-label');
+  const titleLabel   = document.getElementById('entry-title-label');
+
+  if (!modal) return;
+
+  // Prefill date with selected day or today
+  const iso = calendarSelectedIsoDate || todayStr();
+  dateInput.value = iso;
+
+  // Reset fields
+  startInput.value = '';
+  endInput.value   = '';
+  titleInput.value = '';
+  notesArea.value  = '';
+
+  if (calendarEntryMode === 'event') {
+    titleEl.textContent  = 'New event';
+    hintEl.textContent   = 'Choose a date and time for your event.';
+    startLabel.textContent = 'Start time';
+    titleLabel.textContent = 'Event title';
+    endWrapper.classList.remove('hidden');
+    notesWrapper.classList.remove('hidden');
+  } else {
+    titleEl.textContent  = 'New reminder';
+    hintEl.textContent   = 'Choose a date and (optionally) a time for your reminder.';
+    startLabel.textContent = 'Time (optional)';
+    titleLabel.textContent = 'Reminder text';
+    endWrapper.classList.add('hidden');
+    notesWrapper.classList.add('hidden');
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  // Focus first field
+  setTimeout(() => titleInput.focus(), 20);
+}
+
+function closeCalendarEntryModal() {
+  const modal = document.getElementById('calendar-entry-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function saveCalendarEntryFromModal() {
+  const dateInput  = document.getElementById('entry-date');
+  const startInput = document.getElementById('entry-start');
+  const endInput   = document.getElementById('entry-end');
+  const titleInput = document.getElementById('entry-title');
+  const notesArea  = document.getElementById('entry-notes');
+
+  let dateIso = (dateInput.value || '').trim();
+  if (!dateIso) {
+    dateIso = calendarSelectedIsoDate || todayStr();
+  }
+
+  // Normalise date to YYYY-MM-DD
+  if (dateIso.length > 10) dateIso = dateIso.slice(0, 10);
+
+  const start = (startInput.value || '').trim();
+  const end   = (endInput.value || '').trim();
+  const title = (titleInput.value || '').trim();
+  const notes = (notesArea ? notesArea.value : '').trim();
+
+  if (!title) {
+    alert(calendarEntryMode === 'event'
+      ? 'Please enter an event title.'
+      : 'Please enter some reminder text.');
+    return;
+  }
+
+  if (calendarEntryMode === 'event') {
+    if (!events[dateIso]) events[dateIso] = [];
+    events[dateIso].push({
+      id: 'ev_' + Date.now(),
+      start: start || '',
+      end: end || '',
+      title,
+      notes
+    });
+  } else {
+    if (!reminders[dateIso]) reminders[dateIso] = [];
+    reminders[dateIso].push({
+      id: 'rem_' + Date.now(),
+      time: start || '',
+      text: title
+    });
+  }
+
+  saveData();
+
+  // If user chose another date, move selection there so they see it
+  calendarSelectedIsoDate = dateIso;
+  renderCalendar();
+  renderCalendarEntriesForSelectedDate();
+  renderTodayReminders();
+  renderTodayEvents();
+
+  closeCalendarEntryModal();
+}
+
 
 function addReminderForSelectedDate() {
   if (!calendarSelectedIsoDate) return;
@@ -2844,6 +3165,58 @@ function addReminderForSelectedDate() {
   renderCalendarEntriesForSelectedDate();
   renderTodayReminders();
 }
+
+function addEventForSelectedDate() {
+  if (!calendarSelectedIsoDate) return;
+
+  const title = prompt("Event title:");
+  if (!title || !title.trim()) return;
+  const trimmedTitle = title.trim();
+
+  const time = prompt("Time (HH:MM, 24‑hour):", "09:00");
+  if (!time || !time.trim()) return;
+
+  const timeTrimmed = time.trim();
+  // Very light validation, you can tighten this later if you want
+  const timeMatch = /^([01]\d|2[0-3]):([0-5]\d)$/.test(timeTrimmed);
+  if (!timeMatch) {
+    alert("Please enter time as HH:MM (24‑hour), for example 09:30 or 17:05.");
+    return;
+  }
+
+  const notes = prompt("Optional notes for this event (or leave blank):") || "";
+
+  if (!events[calendarSelectedIsoDate]) {
+    events[calendarSelectedIsoDate] = [];
+  }
+
+  events[calendarSelectedIsoDate].push({
+    id: 'ev_' + Date.now(),
+    time: timeTrimmed,
+    title: trimmedTitle,
+    notes: notes.trim()
+  });
+
+  saveData();
+  renderCalendarEntriesForSelectedDate();
+  renderTodayEvents();
+}
+
+function deleteEvent(dateIso, id) {
+  if (!events[dateIso]) return;
+
+  events[dateIso] = events[dateIso].filter(ev => ev.id !== id);
+  if (events[dateIso].length === 0) {
+    delete events[dateIso];
+  }
+
+  saveData();
+  renderCalendarEntriesForSelectedDate();
+  if (dateIso === todayStr()) {
+    renderTodayEvents();
+  }
+}
+
 
 function deleteReminder(dateIso, id) {
   if (!reminders[dateIso]) return;
@@ -2873,19 +3246,57 @@ function renderTodayReminders() {
     return;
   }
 
-  container.innerHTML = list.map(r => `
-    <div class="flex items-start justify-between gap-3 text-sm">
-      <div class="flex-1">
-        <p class="text-white/90">${r.text}</p>
+  container.innerHTML = list.map(r => {
+    const timeLabel = r.time ? `<span class="text-[11px] text-white/60 mr-2">${r.time}</span>` : '';
+    return `
+      <div class="flex items-start justify-between gap-3 text-sm">
+        <div class="flex-1">
+          ${timeLabel}<span class="text-white/90">${r.text}</span>
+        </div>
+        <button
+          onclick="deleteReminder('${todayIso}','${r.id}')"
+          class="text-[11px] text-white/60 hover:text-red-400 px-2 py-1 rounded-2xl border border-white/25"
+        >
+          Delete
+        </button>
+      </div>
+    `;
+  }).join('<div class="h-1"></div>');
+}
+
+
+
+function renderTodayEvents() {
+  const container = document.getElementById('today-events');
+  if (!container) return;
+
+  const todayIso = todayStr();
+  const list = events[todayIso] || [];
+
+  if (list.length === 0) {
+    container.innerHTML = '<p class="text-xs text-white/60">No events scheduled for today yet.</p>';
+    return;
+  }
+
+  // sort by time
+  list.sort((a, b) => a.time.localeCompare(b.time));
+
+  container.innerHTML = list.map(ev => `
+    <div class="flex items-start justify-between text-sm">
+      <div>
+        <div class="text-[11px] text-white/60">${ev.time}</div>
+        <div>${ev.title}</div>
+        ${ev.notes ? `<div class="text-[11px] text-white/60">${ev.notes}</div>` : ''}
       </div>
       <button
-        onclick="deleteReminder('${todayIso}','${r.id}')"
-        class="text-[11px] text-white/60 hover:text-red-400 px-2 py-1 rounded-2xl border border-white/25"
+        onclick="deleteEvent('${todayIso}','${ev.id}')"
+        class="ml-3 p-1 text-white/50 hover:text-red-400 text-[11px]"
+        title="Delete event"
       >
-        Delete
+        ✕
       </button>
     </div>
-  `).join('<div class="h-1"></div>');
+  `).join('<div class="h-2"></div>');
 }
 
 
@@ -2915,7 +3326,7 @@ function renderCalendarEntriesForSelectedDate() {
     }
   });
 
-  // Existing entries HTML
+  // Tasks / journal / gratitude entries
   const entriesHtml = filtered.map(item => `
     <div class="flex gap-3 items-start">
       <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${item.colourClass}">
@@ -2928,38 +3339,242 @@ function renderCalendarEntriesForSelectedDate() {
     </div>
   `).join('<div class="h-2"></div>');
 
-  // Reminders for this day (always shown regardless of filter)
+  // Reminders for this day
   const dayReminders = reminders[calendarSelectedIsoDate] || [];
-  const reminderHtml = dayReminders.map(r => `
-    <div class="flex gap-3 items-start">
-      <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-purple-500/20 text-purple-200 border-purple-400/60">
-        Reminder
-      </span>
-      <div class="flex-1">
-        <p class="text-sm text-white/90">${r.text}</p>
+  const reminderHtml = dayReminders.map(r => {
+    const timeLabel = r.time ? `<span class="text-[11px] text-white/60 mr-1">${r.time}</span>` : '';
+    return `
+      <div class="flex gap-3 items-start">
+        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-purple-500/20 text-purple-200 border-purple-400/60">
+          Reminder
+        </span>
+        <div class="flex-1">
+          <p class="text-sm text-white/90">${timeLabel}${r.text}</p>
+        </div>
+        <button
+          onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
+          class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+          title="Delete reminder"
+        >
+          ✕
+        </button>
       </div>
-      <button
-        onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
-        class="p-1 text-white/50 hover:text-red-400 text-[11px]"
-        title="Delete reminder"
-      >
-        ✕
-      </button>
-    </div>
-  `).join('<div class="h-2"></div>');
+    `;
+  }).join('<div class="h-2"></div>');
 
-  if (filtered.length === 0 && dayReminders.length === 0) {
-    container.innerHTML = '<p class="text-white/50 text-xs">No entries or reminders on this day.</p>';
+  // Events for this day
+  const dayEvents = events[calendarSelectedIsoDate] || [];
+  dayEvents.sort((a, b) => (a.start || a.time || '').localeCompare(b.start || b.time || ''));
+
+  const eventsHtml = dayEvents.map(ev => {
+    const start = ev.start || ev.time || '';
+    const end   = ev.end ? `–${ev.end}` : '';
+    const timeLabel = start ? `${start}${end ? end : ''}` : '';
+
+    const notesBlock = ev.notes
+      ? `<p class="text-sm text-white/90 whitespace-pre-line">${ev.notes}</p>`
+      : '';
+
+    return `
+      <div class="flex gap-3 items-start">
+        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] bg-sky-500/20 text-sky-200 border-sky-400/60">
+          Event
+        </span>
+        <div class="flex-1">
+          <div class="text-[11px] text-white/70 mb-1">
+            ${timeLabel ? timeLabel + ' · ' : ''}${ev.title}
+          </div>
+          ${notesBlock}
+        </div>
+        <button
+          onclick="deleteEvent('${calendarSelectedIsoDate}','${ev.id}')"
+          class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+          title="Delete event"
+        >
+          ✕
+        </button>
+      </div>
+    `;
+  }).join('<div class="h-2"></div>');
+
+  // Nothing for this day
+  if (!entriesHtml && dayReminders.length === 0 && dayEvents.length === 0) {
+    container.innerHTML = '<p class="text-white/50 text-xs">No entries, reminders or events on this day.</p>';
     return;
   }
 
   const parts = [];
-  if (entriesHtml) parts.push(entriesHtml);
-  if (reminderHtml) parts.push(reminderHtml);
+  if (entriesHtml)   parts.push(entriesHtml);
+  if (reminderHtml)  parts.push(reminderHtml);
+  if (eventsHtml)    parts.push(eventsHtml);
 
   container.innerHTML = parts.join('<div class="h-2"></div>');
 }
 
+function renderDayView() {
+  const container = document.getElementById('calendar-view-day');
+  if (!container || !calendarSelectedIsoDate) return;
+
+  const dateIso = calendarSelectedIsoDate;
+  const remindersForDay = (reminders[dateIso] || []).slice();
+  const eventsForDay    = (events[dateIso] || []).slice();
+
+  // Normalise times for sorting
+  remindersForDay.forEach(r => { r._time = r.time || ''; });
+  eventsForDay.forEach(ev => { ev._time = ev.start || ev.time || ''; });
+
+  // Build slots from 06:00 to 22:00
+  const slots = [];
+  for (let h = 6; h <= 22; h++) {
+    const hourStr = String(h).padStart(2, '0') + ':00';
+
+    const slotReminders = remindersForDay.filter(r => (r._time || '').slice(0, 2) === String(h).padStart(2, '0'));
+    const slotEvents    = eventsForDay.filter(ev => (ev._time || '').slice(0, 2) === String(h).padStart(2, '0'));
+
+    slots.push({ hourStr, slotReminders, slotEvents });
+  }
+
+  // All‑day items (no time)
+  const allDayReminders = remindersForDay.filter(r => !r._time);
+  const allDayEvents    = eventsForDay.filter(ev => !ev._time);
+
+  const parts = [];
+
+  // All‑day section
+  if (allDayReminders.length || allDayEvents.length) {
+    parts.push(`
+      <div class="mb-2">
+        <div class="text-[11px] text-white/60 mb-1">All day</div>
+        <div class="space-y-1">
+          ${allDayEvents.map(ev => `
+            <div class="px-3 py-2 rounded-2xl bg-sky-500/20 border border-sky-400/60">
+              <div class="text-[11px] text-white/80">Event · ${ev.title}</div>
+              ${ev.notes ? `<div class="text-[11px] text-white/60 whitespace-pre-line">${ev.notes}</div>` : ''}
+            </div>
+          `).join('')}
+          ${allDayReminders.map(r => `
+            <div class="px-3 py-2 rounded-2xl bg-purple-500/20 border border-purple-400/60">
+              <div class="text-[11px] text-white/80">Reminder · ${r.text}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `);
+  }
+
+  // Hourly slots
+  parts.push(`
+    <div class="grid grid-cols-[60px,1fr] gap-x-3">
+      ${slots.map(slot => {
+        const hasContent = slot.slotReminders.length || slot.slotEvents.length;
+        const rowContent = hasContent
+          ? `
+            ${slot.slotEvents.map(ev => `
+              <div class="mb-1 px-3 py-1.5 rounded-2xl bg-sky-500/15 border border-sky-400/60">
+                <div class="text-[11px] text-white/80">Event · ${ev.title}</div>
+                ${ev.notes ? `<div class="text-[11px] text-white/60 whitespace-pre-line">${ev.notes}</div>` : ''}
+              </div>
+            `).join('')}
+            ${slot.slotReminders.map(r => `
+              <div class="mb-1 px-3 py-1.5 rounded-2xl bg-purple-500/15 border border-purple-400/60">
+                <div class="text-[11px] text-white/80">Reminder · ${r.text}</div>
+              </div>
+            `).join('')}
+          `
+          : `<div class="text-[10px] text-white/20 border-b border-white/10 h-6"></div>`;
+
+        return `
+          <div class="text-[11px] text-white/50 pt-1">${slot.hourStr}</div>
+          <div>${rowContent}</div>
+        `;
+      }).join('')}
+    </div>
+  `);
+
+  container.innerHTML = parts.join('');
+}
+
+function renderWeekView() {
+  const container = document.getElementById('calendar-view-week');
+  if (!container || !calendarSelectedIsoDate) return;
+
+  const anchor = new Date(calendarSelectedIsoDate);
+  // Find Monday of this week
+  const dayOfWeek = (anchor.getDay() + 6) % 7; // 0=Mon
+  const monday = new Date(anchor);
+  monday.setDate(anchor.getDate() - dayOfWeek);
+
+  // Build 7 dates (Mon–Sun)
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    days.push({ date: d, iso });
+  }
+
+  // Build columns
+  const columnsHtml = days.map(d => {
+    const dateLabel = d.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+    const remindersForDay = (reminders[d.iso] || []).slice();
+    const eventsForDay    = (events[d.iso] || []).slice();
+
+    remindersForDay.forEach(r => { r._time = r.time || ''; });
+    eventsForDay.forEach(ev => { ev._time = ev.start || ev.time || ''; });
+
+    remindersForDay.sort((a, b) => (a._time || '').localeCompare(b._time || ''));
+    eventsForDay.sort((a, b) => (a._time || '').localeCompare(b._time || ''));
+
+    const itemsHtml = `
+      ${eventsForDay.map(ev => {
+        const timeLabel = ev._time ? ev._time + ' · ' : '';
+        return `
+          <div class="mb-1 px-2 py-1.5 rounded-2xl bg-sky-500/15 border border-sky-400/60 cursor-pointer"
+               onclick="selectCalendarDate('${d.iso}')">
+            <div class="text-[11px] text-white/80 truncate">${timeLabel}${ev.title}</div>
+          </div>
+        `;
+      }).join('')}
+      ${remindersForDay.map(r => {
+        const timeLabel = r._time ? r._time + ' · ' : '';
+        return `
+          <div class="mb-1 px-2 py-1.5 rounded-2xl bg-purple-500/15 border border-purple-400/60 cursor-pointer"
+               onclick="selectCalendarDate('${d.iso}')">
+            <div class="text-[11px] text-white/80 truncate">${timeLabel}${r.text}</div>
+          </div>
+        `;
+      }).join('')}
+    ` || `<div class="text-[11px] text-white/30 italic">No items</div>`;
+
+    return `
+      <div class="min-w-[120px]">
+        <div class="text-[11px] text-white/60 mb-1">${dateLabel}</div>
+        <div class="space-y-1">
+          ${itemsHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="flex gap-3">
+      ${columnsHtml}
+    </div>
+  `;
+}
+
+function selectCalendarDate(isoDate) {
+  calendarSelectedIsoDate = isoDate;
+  renderCalendar();
+  if (calendarViewMode === 'day') {
+    renderDayView();
+  } else if (calendarViewMode === 'week') {
+    renderWeekView();
+  } else {
+    renderCalendarEntriesForSelectedDate();
+  }
+}
 
 
     function renderTemplateSelectors() {
@@ -3277,7 +3892,11 @@ window.onload = function () {
   setDailyInsight();
   setDailyReflectionTip();
   renderTodayReminders();
+  renderTodayEvents();
   showSection('today');
+  // Ensure calendar view buttons / containers match initial mode
+  setCalendarViewMode('month');
+
 
   const xpTargetInput = document.getElementById('setting-xp-target');
   const rewardInput   = document.getElementById('setting-reward-text');
