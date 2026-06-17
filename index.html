@@ -145,6 +145,34 @@ body.theme-light .bg-lime-500\/20 {
   border-color: #84cc16;
 }
 
+/* Stronger text colours for calendar entries in light mode */
+body.theme-light #calendar-section .text-white\/90 {
+  color: #111827;   /* main entry text (titles / notes) */
+}
+
+body.theme-light #calendar-section .text-white\/70 {
+  color: #374151;   /* secondary labels */
+}
+
+body.theme-light #calendar-section .text-white\/60 {
+  color: #4b5563;   /* tertiary info */
+}
+
+
+/* Stronger calendar tag colours in light mode (reminder / event) */
+body.theme-light .bg-purple-500\/20 {
+  background-color: rgba(168, 85, 247, 0.15);  /* reminder pill */
+  color: #581c87;                               /* deep violet text */
+  border-color: #a855f7;
+}
+
+body.theme-light .bg-sky-500\/20 {
+  background-color: rgba(56, 189, 248, 0.15);  /* event pill */
+  color: #075985;                               /* deep sky text */
+  border-color: #0ea5e9;
+}
+
+
 /* Fix template modal contrast in light mode */
 body.theme-light #reflection-templates-modal {
   color: #e5e7eb; /* default text inside modal = light */
@@ -1037,6 +1065,14 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
     }
+
+function localDateToIso(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 
     function defaultFolders() {
       return [
@@ -3014,40 +3050,46 @@ function renderCalendar() {
     cells.push('<div class="h-9"></div>');
   }
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(calendarYear, calendarMonth, day);
-    const iso  = date.toISOString().slice(0, 10);
-    const hasItems  = !!itemsByDate[iso];
-    const isToday   = iso === todayIso;
-    const isSelected = iso === calendarSelectedIsoDate;
+for (let day = 1; day <= daysInMonth; day++) {
+  const date = new Date(calendarYear, calendarMonth, day);
+  const iso  = localDateToIso(date);  // use local calendar date
 
-    let baseClasses =
-      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
+  const hasItems =
+    !!itemsByDate[iso] ||
+    (reminders[iso] && reminders[iso].length > 0) ||
+    (events[iso] && events[iso].length > 0);
 
-    if (isSelected) {
-      baseClasses += 'bg-lime-400 text-black font-semibold';
-    } else if (isToday) {
-      baseClasses += 'border border-lime-300/70 text-lime-200';
-    } else if (hasItems) {
-      baseClasses += 'bg-white/10 border border-white/20';
-    } else {
-      baseClasses += 'text-white/50';
-    }
+  const isToday    = iso === todayIso;
+  const isSelected = iso === calendarSelectedIsoDate;
 
-    const dot = hasItems
-      ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
-      : '';
+  let baseClasses =
+    'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
 
-    cells.push(`
-      <button
-        class="${baseClasses} relative"
-        onclick="selectCalendarDate('${iso}')"
-      >
-        ${day}
-        ${dot}
-      </button>
-    `);
+  if (isSelected) {
+    baseClasses += 'bg-lime-400 text-black font-semibold';
+  } else if (isToday) {
+    baseClasses += 'border border-lime-300/70 text-lime-200';
+  } else if (hasItems) {
+    baseClasses += 'bg-white/10 border border-white/20';
+  } else {
+    baseClasses += 'text-white/50';
   }
+
+  const dot = hasItems
+    ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
+    : '';
+
+  cells.push(`
+    <button
+      class="${baseClasses} relative"
+      onclick="selectCalendarDate('${iso}')"
+    >
+      ${day}
+      ${dot}
+    </button>
+  `);
+}
+
 
   gridEl.innerHTML = cells.join('');
 
@@ -3256,6 +3298,80 @@ function deleteEvent(dateIso, id) {
   }
 }
 
+function editReminder(dateIso, id) {
+  if (!reminders[dateIso]) return;
+
+  const r = reminders[dateIso].find(x => x.id === id);
+  if (!r) return;
+
+  const newText = prompt("Edit reminder text:", r.text);
+  if (newText === null) return;  // cancelled
+  const trimmedText = newText.trim();
+  if (!trimmedText) {
+    alert("Reminder text cannot be empty.");
+    return;
+  }
+
+  const newTime = prompt(
+    "Edit reminder time (HH:MM, optional – leave blank to remove):",
+    r.time || ""
+  );
+  if (newTime === null) return;  // cancelled
+
+  r.text = trimmedText;
+  r.time = (newTime || "").trim();
+
+  saveData();
+  renderCalendarEntriesForSelectedDate();
+  if (dateIso === todayStr()) {
+    renderTodayReminders();
+  }
+}
+
+function editEvent(dateIso, id) {
+  if (!events[dateIso]) return;
+
+  const ev = events[dateIso].find(x => x.id === id);
+  if (!ev) return;
+
+  const newTitle = prompt("Edit event title:", ev.title);
+  if (newTitle === null) return;
+  const trimmedTitle = newTitle.trim();
+  if (!trimmedTitle) {
+    alert("Event title cannot be empty.");
+    return;
+  }
+
+  const newStart = prompt(
+    "Edit start time (HH:MM, optional):",
+    ev.start || ev.time || ""
+  );
+  if (newStart === null) return;
+
+  const newEnd = prompt(
+    "Edit end time (HH:MM, optional – leave blank if not needed):",
+    ev.end || ""
+  );
+  if (newEnd === null) return;
+
+  const newNotes = prompt(
+    "Edit notes (optional – can be left blank):",
+    ev.notes || ""
+  );
+  if (newNotes === null) return;
+
+  ev.title = trimmedTitle;
+  ev.start = (newStart || "").trim();
+  ev.end   = (newEnd || "").trim();
+  ev.notes = (newNotes || "").trim();
+
+  saveData();
+  renderCalendarEntriesForSelectedDate();
+  if (dateIso === todayStr()) {
+    renderTodayEvents();
+  }
+}
+
 
 function deleteReminder(dateIso, id) {
   if (!reminders[dateIso]) return;
@@ -3390,13 +3506,22 @@ function renderCalendarEntriesForSelectedDate() {
         <div class="flex-1">
           <p class="text-sm text-white/90">${timeLabel}${r.text}</p>
         </div>
-        <button
-          onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
-          class="p-1 text-white/50 hover:text-red-400 text-[11px]"
-          title="Delete reminder"
-        >
-          ✕
-        </button>
+        <div class="flex flex-col items-end gap-1">
+          <button
+            onclick="editReminder('${calendarSelectedIsoDate}','${r.id}')"
+            class="p-1 text-[11px] text-white/60 hover:text-lime-300"
+            title="Edit reminder"
+          >
+            Edit
+          </button>
+          <button
+            onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
+            class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+            title="Delete reminder"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     `;
   }).join('<div class="h-2"></div>');
@@ -3425,13 +3550,22 @@ function renderCalendarEntriesForSelectedDate() {
           </div>
           ${notesBlock}
         </div>
-        <button
-          onclick="deleteEvent('${calendarSelectedIsoDate}','${ev.id}')"
-          class="p-1 text-white/50 hover:text-red-400 text-[11px]"
-          title="Delete event"
-        >
-          ✕
-        </button>
+        <div class="flex flex-col items-end gap-1">
+          <button
+            onclick="editEvent('${calendarSelectedIsoDate}','${ev.id}')"
+            class="p-1 text-[11px] text-white/60 hover:text-lime-300"
+            title="Edit event"
+          >
+            Edit
+          </button>
+          <button
+            onclick="deleteEvent('${calendarSelectedIsoDate}','${ev.id}')"
+            class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+            title="Delete event"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     `;
   }).join('<div class="h-2"></div>');
@@ -3449,6 +3583,7 @@ function renderCalendarEntriesForSelectedDate() {
 
   container.innerHTML = parts.join('<div class="h-2"></div>');
 }
+
 
 function renderDayView() {
   const container = document.getElementById('calendar-view-day');
@@ -3545,12 +3680,13 @@ function renderWeekView() {
 
   // Build 7 dates (Mon–Sun)
   const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const iso = d.toISOString().slice(0, 10);
-    days.push({ date: d, iso });
-  }
+for (let i = 0; i < 7; i++) {
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + i);
+  const iso = localDateToIso(d);
+  days.push({ date: d, iso });
+}
+
 
   // Build columns
   const columnsHtml = days.map(d => {
