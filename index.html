@@ -959,6 +959,31 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
             </div>
           </div>
 
+          <!-- Multi‑day toggle + end date (events only) -->
+          <div id="entry-multiday-row" class="space-y-2">
+            <label class="flex items-center justify-between text-white/70 text-[11px]">
+              <span>Multi‑day event</span>
+              <span class="flex items-center gap-2">
+                <span class="text-white/60 text-[10px]">Spans more than one day</span>
+                <input
+                  id="entry-multiday"
+                  type="checkbox"
+                  class="accent-lime-400"
+                >
+              </span>
+            </label>
+
+            <div id="entry-end-date-wrapper" class="hidden">
+              <label class="block mb-1 text-white/70">Ends on</label>
+              <input
+                id="entry-end-date"
+                type="date"
+                class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+              >
+            </div>
+          </div>
+
+
           <!-- Title / text -->
           <div>
             <label class="block mb-1 text-white/70" id="entry-title-label">Event title</label>
@@ -3293,22 +3318,27 @@ function formatIsoToNice(iso) {
 }
 
 function eventOccursOnDate(ev, startDateIso, targetIso) {
-  const startDate = new Date(startDateIso);
+  const repeat = ev.repeat || 'none';
+
+  // Parse the dates once
+  const startDate  = new Date(startDateIso);
   const targetDate = new Date(targetIso);
 
-  // If target is before the start, it cannot occur
-  if (targetDate < startDate) return false;
+  // Non‑repeating (including multi‑day span using endDateIso)
+  if (!repeat || repeat === 'none') {
+    const startIso = startDateIso;
+    const endIso   = ev.endDateIso && ev.endDateIso >= startIso
+      ? ev.endDateIso
+      : startIso;
 
-  // No repeat or unrecognised repeat → only on its own date
-  if (!ev.repeat || ev.repeat === 'none') {
-    return targetIso === startDateIso;
+    return targetIso >= startIso && targetIso <= endIso;
   }
 
   const oneDayMs = 24 * 60 * 60 * 1000;
   const diffDays = Math.round((targetDate - startDate) / oneDayMs);
   if (diffDays < 0) return false;
 
-  switch (ev.repeat) {
+  switch (repeat) {
     case 'daily':
       // every day from the start date onwards
       return true;
@@ -3319,7 +3349,7 @@ function eventOccursOnDate(ev, startDateIso, targetIso) {
       return day >= 1 && day <= 5;
     }
 
-case 'weekly':
+    case 'weekly':
       // every 7 days
       return diffDays % 7 === 0;
 
@@ -3328,7 +3358,7 @@ case 'weekly':
       return diffDays % 14 === 0;
 
     case 'monthly': {
-      // same day-of-month each month
+      // same day‑of‑month each month
       const sameDay = startDate.getDate() === targetDate.getDate();
       const monthDiff =
         (targetDate.getFullYear() - startDate.getFullYear()) * 12 +
@@ -3345,7 +3375,7 @@ case 'weekly':
       );
 
     default:
-      // fallback: treat as non-repeating
+      // fallback: treat as non‑repeating single‑day event
       return targetIso === startDateIso;
   }
 }
@@ -3562,12 +3592,16 @@ function openCalendarEntryModal(mode) {
   const titleInput = document.getElementById('entry-title');
   const notesArea  = document.getElementById('entry-notes');
 
-  const endWrapper    = document.getElementById('entry-end-wrapper');
-  const notesWrapper  = document.getElementById('entry-notes-wrapper');
-  const startLabel    = document.getElementById('entry-start-label');
-  const titleLabel    = document.getElementById('entry-title-label');
-  const repeatRow     = document.getElementById('entry-repeat-row');
-  const repeatSelect  = document.getElementById('entry-repeat');
+  const endWrapper      = document.getElementById('entry-end-wrapper');
+  const notesWrapper    = document.getElementById('entry-notes-wrapper');
+  const startLabel      = document.getElementById('entry-start-label');
+  const titleLabel      = document.getElementById('entry-title-label');
+  const repeatRow       = document.getElementById('entry-repeat-row');
+  const repeatSelect    = document.getElementById('entry-repeat');
+  const multidayRow     = document.getElementById('entry-multiday-row');
+  const multidayBox     = document.getElementById('entry-multiday');
+  const endDateWrapper  = document.getElementById('entry-end-date-wrapper');
+  const endDateInput    = document.getElementById('entry-end-date');
 
   if (!modal) return;
 
@@ -3575,10 +3609,8 @@ function openCalendarEntryModal(mode) {
     editingCalendarEntry &&
     editingCalendarEntry.mode === calendarEntryMode;
 
-  // If we are editing, load the existing entry
   if (isEditing) {
     const { originalDateIso, id } = editingCalendarEntry;
-
     dateInput.value = originalDateIso;
 
     if (calendarEntryMode === 'event') {
@@ -3586,14 +3618,15 @@ function openCalendarEntryModal(mode) {
       const ev  = arr.find(e => e.id === id);
       if (!ev) return;
 
-      titleEl.textContent = 'Edit event';
-      hintEl.textContent  = 'Update the details for this event.';
+      titleEl.textContent    = 'Edit event';
+      hintEl.textContent     = 'Update the details for this event.';
       startLabel.textContent = 'Start time';
       titleLabel.textContent = 'Event title';
 
-      if (repeatRow) repeatRow.classList.remove('hidden');
+      if (repeatRow)    repeatRow.classList.remove('hidden');
       if (notesWrapper) notesWrapper.classList.remove('hidden');
-      if (endWrapper) endWrapper.classList.remove('hidden');
+      if (endWrapper)   endWrapper.classList.remove('hidden');
+      if (multidayRow)  multidayRow.classList.remove('hidden');
 
       startInput.value = ev.start || ev.time || '';
       endInput.value   = ev.end || '';
@@ -3601,20 +3634,34 @@ function openCalendarEntryModal(mode) {
       notesArea.value  = ev.notes || '';
       if (repeatSelect) repeatSelect.value = ev.repeat || 'none';
 
+      // Multi‑day state
+      if (multidayBox && endDateInput && endDateWrapper) {
+        if (ev.endDateIso && ev.endDateIso !== originalDateIso) {
+          multidayBox.checked = true;
+          endDateInput.value = ev.endDateIso;
+          endDateWrapper.classList.remove('hidden');
+        } else {
+          multidayBox.checked = false;
+          endDateInput.value = '';
+          endDateWrapper.classList.add('hidden');
+        }
+      }
+
     } else {
       // reminder edit
       const arr = reminders[originalDateIso] || [];
       const r   = arr.find(x => x.id === id);
       if (!r) return;
 
-      titleEl.textContent = 'Edit reminder';
-      hintEl.textContent  = 'Update the details for this reminder.';
+      titleEl.textContent    = 'Edit reminder';
+      hintEl.textContent     = 'Update the details for this reminder.';
       startLabel.textContent = 'Time (optional)';
       titleLabel.textContent = 'Reminder text';
 
-      if (repeatRow) repeatRow.classList.add('hidden');   // reminders do not repeat (for now)
+      if (repeatRow)    repeatRow.classList.add('hidden');
       if (notesWrapper) notesWrapper.classList.add('hidden');
-      if (endWrapper) endWrapper.classList.add('hidden');
+      if (endWrapper)   endWrapper.classList.add('hidden');
+      if (multidayRow)  multidayRow.classList.add('hidden');
 
       startInput.value = r.time || '';
       endInput.value   = '';
@@ -3633,118 +3680,155 @@ function openCalendarEntryModal(mode) {
     endInput.value   = '';
     titleInput.value = '';
     notesArea.value  = '';
-    if (repeatSelect) repeatSelect.value = 'none';
+
+    if (multidayBox)    multidayBox.checked = false;
+    if (endDateInput)   endDateInput.value = '';
+    if (endDateWrapper) endDateWrapper.classList.add('hidden');
+    if (repeatSelect)   repeatSelect.value = 'none';
 
     if (calendarEntryMode === 'event') {
-      titleEl.textContent  = 'New event';
-      hintEl.textContent   = 'Choose a date and time for your event.';
+      titleEl.textContent    = 'New event';
+      hintEl.textContent     = 'Choose a date and time for your event.';
       startLabel.textContent = 'Start time';
       titleLabel.textContent = 'Event title';
-      if (repeatRow) repeatRow.classList.remove('hidden');
+
+      if (endWrapper)   endWrapper.classList.remove('hidden');
       if (notesWrapper) notesWrapper.classList.remove('hidden');
-      if (endWrapper) endWrapper.classList.remove('hidden');
+      if (repeatRow)    repeatRow.classList.remove('hidden');
+      if (multidayRow)  multidayRow.classList.remove('hidden');
     } else {
-      titleEl.textContent  = 'New reminder';
-      hintEl.textContent   = 'Choose a date and (optionally) a time for your reminder.';
+      titleEl.textContent    = 'New reminder';
+      hintEl.textContent     = 'Choose a date and (optionally) a time for your reminder.';
       startLabel.textContent = 'Time (optional)';
       titleLabel.textContent = 'Reminder text';
-      if (repeatRow) repeatRow.classList.add('hidden');
+
+      if (endWrapper)   endWrapper.classList.add('hidden');
       if (notesWrapper) notesWrapper.classList.add('hidden');
-      if (endWrapper) endWrapper.classList.add('hidden');
+      if (repeatRow)    repeatRow.classList.add('hidden');
+      if (multidayRow)  multidayRow.classList.add('hidden');
     }
   }
 
+   // Show the modal using inline style so it always appears
+  modal.style.display = 'flex';
   modal.classList.remove('hidden');
   modal.classList.add('flex');
 
-  setTimeout(() => titleInput.focus(), 20);
+  setTimeout(() => titleInput && titleInput.focus(), 20);
 }
 
 
-function closeCalendarEntryModal() {
-  const modal = document.getElementById('calendar-entry-modal');
-  if (!modal) return;
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
 
 function saveCalendarEntryFromModal() {
-  const dateInput  = document.getElementById('entry-date');
-  const startInput = document.getElementById('entry-start');
-  const endInput   = document.getElementById('entry-end');
-  const titleInput = document.getElementById('entry-title');
-  const notesArea  = document.getElementById('entry-notes');
+  const dateInput    = document.getElementById('entry-date');
+  const startInput   = document.getElementById('entry-start');
+  const endInput     = document.getElementById('entry-end');
+  const titleInput   = document.getElementById('entry-title');
+  const notesArea    = document.getElementById('entry-notes');
+  const multidayBox  = document.getElementById('entry-multiday');
+  const endDateInput = document.getElementById('entry-end-date');
   const repeatSelect = document.getElementById('entry-repeat');
 
+  // Base date
   let dateIso = (dateInput.value || '').trim();
   if (!dateIso) {
     dateIso = calendarSelectedIsoDate || todayStr();
   }
   if (dateIso.length > 10) dateIso = dateIso.slice(0, 10);
 
-  const start = (startInput.value || '').trim();
-  const end   = (endInput.value || '').trim();
-  const title = (titleInput.value || '').trim();
-  const notes = (notesArea ? notesArea.value : '').trim();
+  const start  = (startInput.value || '').trim();
+  const end    = (endInput.value || '').trim();
+  const title  = (titleInput.value || '').trim();
+  const notes  = (notesArea ? notesArea.value : '').trim();
   const repeat = repeatSelect ? (repeatSelect.value || 'none') : 'none';
 
-  if (!title) {
-    alert(calendarEntryMode === 'event'
-      ? 'Please enter an event title.'
-      : 'Please enter some reminder text.');
+  // Multi‑day end date (events only)
+  let endDateIso = null;
+  if (
+    calendarEntryMode === 'event' &&
+    multidayBox &&
+    multidayBox.checked &&
+    endDateInput &&
+    endDateInput.value
+  ) {
+    endDateIso = endDateInput.value.trim();
+    if (endDateIso.length > 10) endDateIso = endDateIso.slice(0, 10);
+
+    // Simple safety check: only block if the string is clearly earlier
+    if (endDateIso < dateIso) {
+      alert('End date cannot be before the start date.');
+      return;
+    }
+  }
+
+  // REQUIRE A TITLE ONLY FOR EVENTS
+  if (!title && calendarEntryMode === 'event') {
+    alert('Please enter an event title.');
     return;
   }
 
   const isEditing = !!editingCalendarEntry;
 
+  // ----------------- EVENT BRANCH -----------------
   if (calendarEntryMode === 'event') {
     if (!events[dateIso]) events[dateIso] = [];
 
     if (isEditing && editingCalendarEntry.mode === 'event') {
+      // Update existing event
       const { originalDateIso, id } = editingCalendarEntry;
       const arr = events[originalDateIso] || [];
       const idx = arr.findIndex(ev => ev.id === id);
 
       if (idx === -1) {
-        // If something went wrong, fall back to adding a new one
+        // Fallback: treat as new event on chosen date
         events[dateIso].push({
           id: 'ev_' + Date.now(),
           start: start || '',
           end: end || '',
-          title,
+          title: title || '(no title)',
           notes,
-          repeat
+          repeat,
+          endDateIso: endDateIso || null
         });
       } else {
-        const ev = arr[idx];
-        ev.start  = start || '';
-        ev.end    = end || '';
-        ev.title  = title;
-        ev.notes  = notes;
-        ev.repeat = repeat;
+      const ev = arr[idx];
+ev.start       = start || '';
+ev.end         = end || '';
+ev.title       = title || '(no title)';
+ev.notes       = notes;
+ev.repeat      = repeat;
+ev.endDateIso  = endDateIso || null;
 
-        // If the date changed, move the event to the new bucket
-        if (originalDateIso !== dateIso) {
-          arr.splice(idx, 1);
-          if (arr.length === 0) delete events[originalDateIso];
-          events[dateIso].push(ev);
-        }
+// Ensure we remember the true start date
+ev.startDateIso = ev.startDateIso || originalDateIso;
+
+
+      // If the date changed, move bucket and update start date
+if (originalDateIso !== dateIso) {
+  arr.splice(idx, 1);
+  if (arr.length === 0) delete events[originalDateIso];
+  ev.startDateIso = dateIso;
+  events[dateIso].push(ev);
+}
+
       }
-
     } else {
       // New event
-      events[dateIso].push({
-        id: 'ev_' + Date.now(),
-        start: start || '',
-        end: end || '',
-        title,
-        notes,
-        repeat
-      });
+events[dateIso].push({
+  id: 'ev_' + Date.now(),
+  start: start || '',
+  end: end || '',
+  title: title || '(no title)',
+  notes,
+  repeat,
+  endDateIso: endDateIso || null,
+  startDateIso: dateIso          // remember the starting day
+});
+
     }
 
+  // ----------------- REMINDER BRANCH -----------------
   } else {
-    // Reminder
     if (!reminders[dateIso]) reminders[dateIso] = [];
 
     if (isEditing && editingCalendarEntry.mode === 'reminder') {
@@ -3753,15 +3837,16 @@ function saveCalendarEntryFromModal() {
       const idx = arr.findIndex(r => r.id === id);
 
       if (idx === -1) {
+        // Fallback: new reminder on chosen date
         reminders[dateIso].push({
           id: 'rem_' + Date.now(),
           time: start || '',
-          text: title
+          text: title || '(reminder)'
         });
       } else {
         const r = arr[idx];
         r.time = start || '';
-        r.text = title;
+        r.text = title || '(reminder)';
 
         if (originalDateIso !== dateIso) {
           arr.splice(idx, 1);
@@ -3769,29 +3854,42 @@ function saveCalendarEntryFromModal() {
           reminders[dateIso].push(r);
         }
       }
-
     } else {
       // New reminder
       reminders[dateIso].push({
         id: 'rem_' + Date.now(),
         time: start || '',
-        text: title
+        text: title || '(reminder)'
       });
     }
   }
 
-  // After saving, treat this as the selected date
-  calendarSelectedIsoDate = dateIso;
+  // Finalise
+    calendarSelectedIsoDate = dateIso;
   editingCalendarEntry = null;
 
+  // Close the pop‑up *first* so it always disappears
+  closeCalendarEntryModal();
+
+  // Then update and re‑render everything
   saveData();
   renderCalendar();
   renderCalendarEntriesForSelectedDate();
   renderTodayReminders();
   renderTodayEvents();
-  closeCalendarEntryModal();
 }
 
+function closeCalendarEntryModal() {
+  const modal = document.getElementById('calendar-entry-modal');
+  if (!modal) return;
+
+  // Hide the modal using inline style so it always disappears
+  modal.style.display = 'none';
+
+  // Also keep the utility classes in sync
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
 
 
 function addReminderForSelectedDate() {
@@ -3942,31 +4040,43 @@ function renderTodayEvents() {
   const todayIso = todayStr();
   const list = getEventsForDate(todayIso);
 
-  if (list.length === 0) {
-    container.innerHTML = '<p class="text-xs text-white/60">No events scheduled for today yet.</p>';
+  if (!list.length) {
+    container.innerHTML =
+      '<p class="text-xs text-white/60">No events scheduled for today yet.</p>';
     return;
   }
 
-  // sort by time
-  list.sort((a, b) => a.time.localeCompare(b.time));
+  // Safely sort using start or time (whichever exists)
+  list.sort((a, b) => {
+    const at = a.start || a.time || '';
+    const bt = b.start || b.time || '';
+    return at.localeCompare(bt);
+  });
 
-  container.innerHTML = list.map(ev => `
-    <div class="flex items-start justify-between text-sm">
-      <div>
-        <div class="text-[11px] text-white/60">${ev.time}</div>
-        <div>${ev.title}</div>
-        ${ev.notes ? `<div class="text-[11px] text-white/60">${ev.notes}</div>` : ''}
+  container.innerHTML = list.map(ev => {
+    const timeStr = ev.start || ev.time || '';
+    return `
+      <div class="flex items-start justify-between text-sm">
+        <div>
+          ${timeStr
+            ? `<div class="text-[11px] text-white/60">${timeStr}${ev.end ? '–' + ev.end : ''}</div>`
+            : ''
+          }
+          <div>${ev.title}</div>
+          ${ev.notes ? `<div class="text-[11px] text-white/60">${ev.notes}</div>` : ''}
+        </div>
+        <button
+          onclick="deleteEvent('${todayIso}','${ev.id}')"
+          class="ml-3 p-1 text-white/50 hover:text-red-400 text-[11px]"
+          title="Delete event"
+        >
+          ✕
+        </button>
       </div>
-      <button
-        onclick="deleteEvent('${todayIso}','${ev.id}')"
-        class="ml-3 p-1 text-white/50 hover:text-red-400 text-[11px]"
-        title="Delete event"
-      >
-        ✕
-      </button>
-    </div>
-  `).join('<div class="h-2"></div>');
+    `;
+  }).join('<div class="h-2"></div>');
 }
+
 
 
 function renderCalendarEntriesForSelectedDate() {
@@ -4035,12 +4145,13 @@ function renderCalendarEntriesForSelectedDate() {
         </div>
         <div class="flex flex-col items-end gap-1">
           <button
-            onclick="editReminder('${calendarSelectedIsoDate}','${r.id}')"
-            class="p-1 text-[11px] text-white/60 hover:text-lime-300"
-            title="Edit reminder"
-          >
-            Edit
-          </button>
+  onclick="editEvent('${ev.startDateIso || calendarSelectedIsoDate}','${ev.id}')"
+  class="p-1 text-[11px] text-white/60 hover:text-lime-300"
+  title="Edit event"
+>
+  Edit
+</button>
+
           <button
             onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
             class="p-1 text-white/50 hover:text-red-400 text-[11px]"
@@ -4156,49 +4267,81 @@ function renderDayView() {
     `);
   }
 
-  // Build event blocks spanning from start to end
-  const eventBlocks = [];
-  timedEvents.forEach((ev, idx) => {
-    const startStr = ev.start || ev.time || '09:00';
-    const endStr   = ev.end || startStr;
+ // Build event blocks spanning from start to end (with multi‑day support)
+const eventBlocks = [];
+timedEvents.forEach((ev, idx) => {
+  const thisIso   = dateIso;                        // the day we are drawing
+  const startIso  = ev.startDateIso || thisIso;     // original start day
+  const endIso    = ev.endDateIso || startIso;
 
-    let startMinutes = parseTimeToMinutes(startStr);
-    let endMinutes   = parseTimeToMinutes(endStr);
+  const isMultiDay = endIso > startIso;
 
+  const startStr = ev.start || ev.time || '09:00';
+  const endStr   = ev.end || startStr;
+
+  // Default times in minutes
+  let startMinutes = parseTimeToMinutes(startStr);
+  let endMinutes   = parseTimeToMinutes(endStr);
+
+  const windowStart = dayStartHour * 60;
+  const windowEnd   = dayEndHour * 60;
+
+  if (!isMultiDay) {
+    // Normal single‑day event: use the actual start/end times
     if (startMinutes === null) startMinutes = dayStartHour * 60;
     if (endMinutes === null || endMinutes <= startMinutes) {
-      endMinutes = startMinutes + 60; // default 1‑hour block
+      endMinutes = startMinutes + 60;
     }
-
-    // Clamp to visible window
-    const windowStart = dayStartHour * 60;
-    const windowEnd   = dayEndHour * 60;
-    if (endMinutes <= windowStart || startMinutes >= windowEnd) {
-      return; // lies completely outside
+  } else {
+    // Multi‑day event: decide how much of the day to fill
+    if (thisIso === startIso) {
+      // First day: from actual start time until end of the visible day
+      if (startMinutes === null) startMinutes = dayStartHour * 60;
+      endMinutes = windowEnd;
+    } else if (thisIso === endIso) {
+      // Last day: from start of visible day until actual end time
+      startMinutes = windowStart;
+      if (endMinutes === null) endMinutes = windowEnd;
+    } else if (thisIso > startIso && thisIso < endIso) {
+      // Middle days: fill the whole visible day
+      startMinutes = windowStart;
+      endMinutes   = windowEnd;
+    } else {
+      // This date is outside the multi‑day span
+      return;
     }
-    const clampedStart = Math.max(startMinutes, windowStart);
-    const clampedEnd   = Math.min(endMinutes, windowEnd);
+  }
 
-    const top    = ((clampedStart - windowStart) / 60) * rowHeight;
-    const height = Math.max(30, ((clampedEnd - clampedStart) / 60) * rowHeight - 4);
+  // Clamp to visible window
+  if (endMinutes <= windowStart || startMinutes >= windowEnd) {
+    return; // lies completely outside
+  }
 
-    // Simple horizontal staggering if multiple overlapping events
-    const offsetX = (idx % 3) * 8;   // px
-    const widthCalc = idx > 0 ? 'calc(100% - 12px)' : '100%';
+  const clampedStart = Math.max(startMinutes, windowStart);
+  const clampedEnd   = Math.min(endMinutes, windowEnd);
 
-    const timeLabel = `${startStr}${ev.end ? '–' + ev.end : ''}`;
+  const top    = ((clampedStart - windowStart) / 60) * rowHeight;
+  const height = Math.max(30, ((clampedEnd - clampedStart) / 60) * rowHeight - 4);
 
-    eventBlocks.push(`
-      <div
-        class="absolute rounded-2xl bg-sky-500/15 border border-sky-400/70 px-3 py-1.5 text-xs text-white/90 overflow-hidden"
-        style="top:${top}px; height:${height}px; left:${offsetX}px; width:${widthCalc};"
-      >
-        <div class="text-[11px] text-white/70 mb-0.5">${timeLabel}</div>
-        <div class="font-medium truncate">${ev.title || 'Event'}</div>
-        ${ev.notes ? `<div class="text-[11px] text-white/60 mt-0.5 line-clamp-2">${ev.notes}</div>` : ''}
-      </div>
-    `);
-  });
+  // Simple horizontal staggering if multiple overlapping events
+  const offsetX   = (idx % 3) * 8;   // px
+  const widthCalc = idx > 0 ? 'calc(100% - 12px)' : '100%';
+
+  const timeLabel = `${startStr}${ev.end ? '–' + ev.end : ''}`;
+
+  eventBlocks.push(`
+    <div
+      class="absolute rounded-2xl bg-sky-500/15 border border-sky-400/70 px-3 py-1.5 text-xs text-white/90 overflow-hidden cursor-pointer"
+      style="top:${top}px; height:${height}px; left:${offsetX}px; width:${widthCalc};"
+      onclick="editEvent('${startIso}','${ev.id}')"
+    >
+      <div class="text-[11px] text-white/70 mb-0.5">${timeLabel}</div>
+      <div class="font-medium truncate">${ev.title || 'Event'}</div>
+      ${ev.notes ? `<div class="text-[11px] text-white/60 mt-0.5 line-clamp-2">${ev.notes}</div>` : ''}
+    </div>
+  `);
+});
+
 
   // Build reminder markers (small chips at their time)
   const reminderMarkers = [];
@@ -4653,6 +4796,17 @@ function saveGratitudeEntryWithCustomXP(xpAmount) {
       const navBtn = document.querySelector(`[data-tab="${tab}"]`);
       if (navBtn) navBtn.classList.add('nav-active');
     }
+
+// Show / hide end date when multi‑day checkbox changes
+document.addEventListener('change', function (e) {
+  if (e.target && e.target.id === 'entry-multiday') {
+    const wrapper = document.getElementById('entry-end-date-wrapper');
+    if (!wrapper) return;
+    if (e.target.checked) wrapper.classList.remove('hidden');
+    else wrapper.classList.add('hidden');
+  }
+});
+
 
     // Initial load
 window.onload = function () {
