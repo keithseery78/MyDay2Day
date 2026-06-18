@@ -508,7 +508,7 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
               <span>Priority</span>
             </label>
           </div>
-          <button onclick="addTask()" class="mt-3 w-full btn-gradient text-black font-semibold py-3.5 rounded-3xl text-sm">+ Add Task</button>
+          <button onclick="openTaskModal(null)" class="mt-3 w-full btn-gradient text-black font-semibold py-3.5 rounded-3xl text-sm">+ Add Task</button>
         </div>
       </div>
 
@@ -577,6 +577,70 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
       </div>
     </div>
 
+<!-- TASK ENTRY MODAL -->
+<div
+  id="task-entry-modal"
+  class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
+>
+  <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="task-modal-title" class="text-sm font-medium">Task</h3>
+      <button
+        onclick="closeTaskModal()"
+        class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+      >
+        Close
+      </button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <!-- Task text -->
+      <div>
+        <label class="block mb-1 text-white/70">Task</label>
+        <input
+          id="task-modal-text"
+          type="text"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-sm"
+          placeholder="What do you want to get done?"
+        >
+      </div>
+
+      <!-- XP + Priority -->
+      <div class="flex gap-3">
+        <div class="w-24">
+          <label class="block mb-1 text-white/70">XP</label>
+          <input
+            id="task-modal-xp"
+            type="number"
+            class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center"
+          >
+        </div>
+        <label class="flex-1 flex items-center gap-2 bg-black/60 border border-white/20 rounded-2xl px-3 py-2">
+          <input id="task-modal-priority" type="checkbox" class="accent-lime-400">
+          <span class="text-white/80 text-xs">Mark as priority</span>
+        </label>
+      </div>
+
+      <!-- Folder -->
+      <div>
+        <label class="block mb-1 text-white/70">Folder</label>
+        <select
+          id="task-modal-folder"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+        >
+          <!-- Filled by openTaskModal() -->
+        </select>
+      </div>
+    </div>
+
+    <button
+      onclick="saveTaskFromModal()"
+      class="mt-4 w-full btn-gradient text-black font-semibold py-2.5 rounded-2xl text-sm"
+    >
+      Save task
+    </button>
+  </div>
+</div>
 
 
      <!-- REFLECTIONS TAB -->
@@ -819,6 +883,11 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
           + Event
         </button>
       </div>
+    </div>
+
+   <!-- Holiday banner (shown when selected date is a public holiday) -->
+    <div id="calendar-holiday-banner"
+         class="mb-2 text-xs rounded-2xl px-3 py-2 bg-rose-500/15 border border-rose-400/60 text-rose-100 hidden">
     </div>
 
     <!-- Month view entries list -->
@@ -1082,6 +1151,10 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
 
     let focusGoals = [];  // goals for the current focus session
     let calendarEntryMode = 'event'; // 'event' or 'reminder'
+let editingTaskIndex = null;   // null = new task, number = editing existing task
+let editingCalendarEntry = null; 
+// { mode: 'event' | 'reminder', originalDateIso: 'YYYY-MM-DD', id: string } when editing
+
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -1108,6 +1181,16 @@ function localDateToIso(d) {
   return `${y}-${m}-${day}`;
 }
 
+// Convert "HH:MM" into minutes after midnight (e.g. "08:30" -> 510)
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const parts = timeStr.split(':');
+  if (parts.length !== 2) return null;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
 
     function defaultFolders() {
       return [
@@ -1118,6 +1201,88 @@ function localDateToIso(d) {
         { id: 'learning', name: 'Learning', builtin: true }
       ];
     }
+
+// ---------- Irish public holidays (next 50 years) ----------
+
+// Computus for Easter Sunday (Meeus/Jones/Butcher algorithm), then +1 day for Easter Monday
+function computeEasterMonday(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31); // 3 = March, 4 = April
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  const easterSunday = new Date(year, month - 1, day);
+  const easterMonday = new Date(easterSunday.getTime() + 24 * 60 * 60 * 1000);
+  return localDateToIso(easterMonday);
+}
+
+// Helper: first Monday in a month
+function firstMondayIso(year, monthIndex) {
+  // monthIndex: 0 = Jan, 7 = Aug, etc.
+  // Start on the 1st of the month in local time
+  const d = new Date(year, monthIndex, 1);
+
+  // Move forward until we hit Monday (getDay() === 1)
+  while (d.getDay() !== 1) {
+    d.setDate(d.getDate() + 1);
+  }
+
+  // Convert to YYYY-MM-DD in local time
+  return localDateToIso(d);
+}
+
+
+// Helper: last Monday in a month
+function lastMondayIso(year, monthIndex) {
+  const d = new Date(year, monthIndex + 1, 0); // last day of month
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const offset = (day + 6) % 7; // days to go back to Monday
+  d.setDate(d.getDate() - offset);
+  return localDateToIso(d);
+}
+
+// St Brigid's Day: first Monday in February (Republic of Ireland rule)
+function stBrigidsDayIso(year) {
+  return firstMondayIso(year, 1); // February = 1
+}
+
+// Build holidays for a single year
+function buildIrishHolidaysForYear(year) {
+  return [
+    { date: `${year}-01-01`, title: "New Year’s Day" },
+    { date: stBrigidsDayIso(year), title: "St Brigid’s Day" },
+    { date: `${year}-03-17`, title: "St Patrick’s Day" },
+    { date: computeEasterMonday(year), title: "Easter Monday" },
+    { date: firstMondayIso(year, 4), title: "May Bank Holiday" },     // May
+    { date: firstMondayIso(year, 5), title: "June Bank Holiday" },    // June
+    { date: firstMondayIso(year, 7), title: "August Bank Holiday" },  // August
+    { date: lastMondayIso(year, 9), title: "October Bank Holiday" },  // October
+    { date: `${year}-12-25`, title: "Christmas Day" },
+    { date: `${year}-12-26`, title: "St Stephen’s Day" }
+  ];
+}
+
+// Build holidays for the next 50 years starting from the current year
+const irishHolidays = (function () {
+  const startYear = new Date().getFullYear();
+  const yearsAhead = 50;
+  const list = [];
+  for (let y = startYear; y < startYear + yearsAhead; y++) {
+    list.push(...buildIrishHolidaysForYear(y));
+  }
+  return list;
+})();
+
 
 	function getDefaultJournalTemplates() {
  	 return [
@@ -1864,6 +2029,133 @@ function promptRenameFolder() {
   updateHomeStats();
 }
 
+// ---------- TASK MODAL ----------
+
+function openTaskModal(index) {
+  const modal      = document.getElementById('task-entry-modal');
+  const titleEl    = document.getElementById('task-modal-title');
+  const textInput  = document.getElementById('task-modal-text');
+  const xpInput    = document.getElementById('task-modal-xp');
+  const prioInput  = document.getElementById('task-modal-priority');
+  const folderSelect = document.getElementById('task-modal-folder');
+
+  if (!modal || !textInput || !xpInput || !prioInput || !folderSelect) return;
+
+  // Build folder options each time so it stays in sync
+  folderSelect.innerHTML = '';
+  const allFolders = folders && folders.length ? folders : [];
+  allFolders.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = f.name;
+    folderSelect.appendChild(opt);
+  });
+
+  // "New task" mode
+  if (index === null || typeof index === 'undefined') {
+    editingTaskIndex = null;
+    if (titleEl) titleEl.textContent = 'New task';
+    textInput.value = '';
+    xpInput.value   = '10';
+    prioInput.checked = false;
+
+    // Default folder = current folder (or inbox)
+    const fallbackFolder = currentFolderId === 'all' ? 'inbox' : currentFolderId;
+    folderSelect.value = fallbackFolder;
+  } else {
+    // Editing existing task
+    const task = tasks[index];
+    if (!task) return;
+    editingTaskIndex = index;
+
+    if (titleEl) titleEl.textContent = 'Edit task';
+    textInput.value = task.text || '';
+    xpInput.value   = typeof task.xp === 'number' ? task.xp : 10;
+    prioInput.checked = !!task.priority;
+
+    const folderId = task.folderId || 'inbox';
+    folderSelect.value = folderId;
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  setTimeout(() => textInput.focus(), 20);
+}
+
+function closeTaskModal() {
+  const modal = document.getElementById('task-entry-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  editingTaskIndex = null;
+}
+
+function saveTaskFromModal() {
+  const textInput  = document.getElementById('task-modal-text');
+  const xpInput    = document.getElementById('task-modal-xp');
+  const prioInput  = document.getElementById('task-modal-priority');
+  const folderSelect = document.getElementById('task-modal-folder');
+
+  if (!textInput || !xpInput || !prioInput || !folderSelect) return;
+
+  const text = (textInput.value || '').trim();
+  if (!text) {
+    alert("Task text cannot be empty.");
+    return;
+  }
+
+  let xpVal = parseInt(xpInput.value, 10);
+  if (isNaN(xpVal) || xpVal < 0) xpVal = 0;
+
+  const priority = !!prioInput.checked;
+  const folderIdForTask = folderSelect.value || (currentFolderId === 'all' ? 'inbox' : currentFolderId);
+  const todayIso = todayStr();
+
+  if (editingTaskIndex === null) {
+    // Create new task (similar to addTask)
+    tasks.unshift({
+      text,
+      xp: xpVal,
+      done: false,
+      priority,
+      folderId: folderIdForTask,
+      createdIsoDate: todayIso,
+      completedIsoDate: null,
+      xpAwarded: false
+    });
+
+    registerEngagement();
+  } else {
+    // Update existing task
+    const task = tasks[editingTaskIndex];
+    if (!task) return;
+
+    // If XP changes on a completed task, adjust totals so XP stays accurate
+    if (task.done && task.xpAwarded && xpVal !== task.xp) {
+      const delta = xpVal - task.xp;
+      if (delta !== 0) {
+        addXP(delta, false); // adjust XP but do not re‑register engagement
+      }
+    }
+
+    task.text     = text;
+    task.xp       = xpVal;
+    task.priority = priority;
+    task.folderId = folderIdForTask;
+  }
+
+  saveData();
+
+  const currentFilter = document.getElementById('task-filter')?.value || 'all';
+  renderTasks(currentFilter);
+  renderMITs();
+  updateHomeStats();
+  renderCalendar();   // keep calendar in sync with tasks history
+
+  closeTaskModal();
+}
+
 
     // Tasks
     // Tasks
@@ -1921,9 +2213,10 @@ function promptRenameFolder() {
                   <span class="text-[10px] text-lime-300 ml-2">${task.xp} XP</span>
                 </div>
                 <div class="flex items-center gap-1">
-                  <button onclick="editTask(${i})" class="px-2 py-1 rounded-2xl border border-white/30 text-[11px] text-white/70 hover:text-lime-300">
-                    Edit
-                  </button>
+                  <button onclick="openTaskModal(${i})" class="px-2 py-1 rounded-2xl border border-white/30 text-[11px] text-white/70 hover:text-lime-300">
+  Edit
+</button>
+
                   <button onclick="deleteTask(${i})" class="p-1 text-white/50 hover:text-red-400">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                       <path d="M5 7h14" stroke-linecap="round"/>
@@ -2944,7 +3237,7 @@ function buildCalendarItems() {
     });
   });
 
-  // Tasks: created + completed
+    // Tasks: created + completed
   tasks.forEach(t => {
     const createdDate = t.createdIsoDate || todayStr();
     addItem(createdDate, {
@@ -2967,6 +3260,19 @@ function buildCalendarItems() {
       });
     }
   });
+
+  // >>> ADD THIS BLOCK HERE <<<
+  // Irish public holidays (pre‑loaded)
+  irishHolidays.forEach(h => {
+    addItem(h.date, {
+      type: 'Holiday',
+      kind: 'holiday',
+      label: 'Public holiday (Ireland)',
+      text: h.title,
+      colourClass: 'bg-rose-500/20 text-rose-100 border-rose-400/70'
+    });
+  });
+  // >>> END OF NEW BLOCK <<<
 
   return itemsByDate;
 }
@@ -3170,17 +3476,20 @@ function renderCalendar() {
   // Calendar days
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(calendarYear, calendarMonth, day);
-    const iso  = localDateToIso(date);  // YYYY-MM-DD in local time
+    const iso  = localDateToIso(date);  // use local calendar date
 
-    // 1) Are there any events (including recurring) for this date?
-    const recurringEvents = getEventsForDate(iso);
+    const dayItems   = itemsByDate[iso] || [];
+    const hasHoliday = dayItems.some(item => item.kind === 'holiday');
+
+    const hasItemsFromMap = dayItems.length > 0;
+    const hasReminders    = !!(reminders[iso] && reminders[iso].length > 0);
+
+    // If you are already using getEventsForDate for recurring events, keep it:
+    const recurringEvents = typeof getEventsForDate === 'function'
+      ? getEventsForDate(iso)
+      : (events[iso] || []);
+
     const hasRecurringEvents = recurringEvents.length > 0;
-
-    // 2) Are there any tasks / journal / gratitude / holidays for this date?
-    const hasItemsFromMap = !!itemsByDate[iso];
-
-    // 3) Are there any reminders for this date?
-    const hasReminders = !!(reminders[iso] && reminders[iso].length > 0);
 
     const hasItems = hasItemsFromMap || hasReminders || hasRecurringEvents;
 
@@ -3191,18 +3500,26 @@ function renderCalendar() {
       'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
 
     if (isSelected) {
+      // Selected day still looks like your normal selection
       baseClasses += 'bg-lime-400 text-black font-semibold';
     } else if (isToday) {
       baseClasses += 'border border-lime-300/70 text-lime-200';
+    } else if (hasHoliday) {
+      // Holiday highlight (different from normal “has items”)
+      baseClasses += 'bg-rose-900/30 border border-rose-400/80 text-rose-50';
     } else if (hasItems) {
       baseClasses += 'bg-white/10 border border-white/20';
     } else {
       baseClasses += 'text-white/50';
     }
 
-    const dot = hasItems
-      ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
-      : '';
+    // Dot: use a rose dot if it is a holiday, otherwise lime when there are items
+    let dot = '';
+    if (hasHoliday) {
+      dot = '<span class="absolute bottom-1 w-2 h-2 rounded-full bg-rose-300"></span>';
+    } else if (hasItems) {
+      dot = '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>';
+    }
 
     cells.push(`
       <button
@@ -3245,45 +3562,104 @@ function openCalendarEntryModal(mode) {
   const titleInput = document.getElementById('entry-title');
   const notesArea  = document.getElementById('entry-notes');
 
-  const endWrapper   = document.getElementById('entry-end-wrapper');
-  const notesWrapper = document.getElementById('entry-notes-wrapper');
-  const startLabel   = document.getElementById('entry-start-label');
-  const titleLabel   = document.getElementById('entry-title-label');
+  const endWrapper    = document.getElementById('entry-end-wrapper');
+  const notesWrapper  = document.getElementById('entry-notes-wrapper');
+  const startLabel    = document.getElementById('entry-start-label');
+  const titleLabel    = document.getElementById('entry-title-label');
+  const repeatRow     = document.getElementById('entry-repeat-row');
+  const repeatSelect  = document.getElementById('entry-repeat');
 
   if (!modal) return;
 
-  // Prefill date with selected day or today
-  const iso = calendarSelectedIsoDate || todayStr();
-  dateInput.value = iso;
+  const isEditing =
+    editingCalendarEntry &&
+    editingCalendarEntry.mode === calendarEntryMode;
 
-  // Reset fields
-  startInput.value = '';
-  endInput.value   = '';
-  titleInput.value = '';
-  notesArea.value  = '';
+  // If we are editing, load the existing entry
+  if (isEditing) {
+    const { originalDateIso, id } = editingCalendarEntry;
 
-  if (calendarEntryMode === 'event') {
-    titleEl.textContent  = 'New event';
-    hintEl.textContent   = 'Choose a date and time for your event.';
-    startLabel.textContent = 'Start time';
-    titleLabel.textContent = 'Event title';
-    endWrapper.classList.remove('hidden');
-    notesWrapper.classList.remove('hidden');
+    dateInput.value = originalDateIso;
+
+    if (calendarEntryMode === 'event') {
+      const arr = events[originalDateIso] || [];
+      const ev  = arr.find(e => e.id === id);
+      if (!ev) return;
+
+      titleEl.textContent = 'Edit event';
+      hintEl.textContent  = 'Update the details for this event.';
+      startLabel.textContent = 'Start time';
+      titleLabel.textContent = 'Event title';
+
+      if (repeatRow) repeatRow.classList.remove('hidden');
+      if (notesWrapper) notesWrapper.classList.remove('hidden');
+      if (endWrapper) endWrapper.classList.remove('hidden');
+
+      startInput.value = ev.start || ev.time || '';
+      endInput.value   = ev.end || '';
+      titleInput.value = ev.title || '';
+      notesArea.value  = ev.notes || '';
+      if (repeatSelect) repeatSelect.value = ev.repeat || 'none';
+
+    } else {
+      // reminder edit
+      const arr = reminders[originalDateIso] || [];
+      const r   = arr.find(x => x.id === id);
+      if (!r) return;
+
+      titleEl.textContent = 'Edit reminder';
+      hintEl.textContent  = 'Update the details for this reminder.';
+      startLabel.textContent = 'Time (optional)';
+      titleLabel.textContent = 'Reminder text';
+
+      if (repeatRow) repeatRow.classList.add('hidden');   // reminders do not repeat (for now)
+      if (notesWrapper) notesWrapper.classList.add('hidden');
+      if (endWrapper) endWrapper.classList.add('hidden');
+
+      startInput.value = r.time || '';
+      endInput.value   = '';
+      titleInput.value = r.text || '';
+      notesArea.value  = '';
+    }
+
   } else {
-    titleEl.textContent  = 'New reminder';
-    hintEl.textContent   = 'Choose a date and (optionally) a time for your reminder.';
-    startLabel.textContent = 'Time (optional)';
-    titleLabel.textContent = 'Reminder text';
-    endWrapper.classList.add('hidden');
-    notesWrapper.classList.add('hidden');
+    // New entry – clear fields and set defaults
+    editingCalendarEntry = null;
+
+    const iso = calendarSelectedIsoDate || todayStr();
+    dateInput.value = iso;
+
+    startInput.value = '';
+    endInput.value   = '';
+    titleInput.value = '';
+    notesArea.value  = '';
+    if (repeatSelect) repeatSelect.value = 'none';
+
+    if (calendarEntryMode === 'event') {
+      titleEl.textContent  = 'New event';
+      hintEl.textContent   = 'Choose a date and time for your event.';
+      startLabel.textContent = 'Start time';
+      titleLabel.textContent = 'Event title';
+      if (repeatRow) repeatRow.classList.remove('hidden');
+      if (notesWrapper) notesWrapper.classList.remove('hidden');
+      if (endWrapper) endWrapper.classList.remove('hidden');
+    } else {
+      titleEl.textContent  = 'New reminder';
+      hintEl.textContent   = 'Choose a date and (optionally) a time for your reminder.';
+      startLabel.textContent = 'Time (optional)';
+      titleLabel.textContent = 'Reminder text';
+      if (repeatRow) repeatRow.classList.add('hidden');
+      if (notesWrapper) notesWrapper.classList.add('hidden');
+      if (endWrapper) endWrapper.classList.add('hidden');
+    }
   }
 
   modal.classList.remove('hidden');
   modal.classList.add('flex');
 
-  // Focus first field
   setTimeout(() => titleInput.focus(), 20);
 }
+
 
 function closeCalendarEntryModal() {
   const modal = document.getElementById('calendar-entry-modal');
@@ -3298,19 +3674,19 @@ function saveCalendarEntryFromModal() {
   const endInput   = document.getElementById('entry-end');
   const titleInput = document.getElementById('entry-title');
   const notesArea  = document.getElementById('entry-notes');
+  const repeatSelect = document.getElementById('entry-repeat');
 
   let dateIso = (dateInput.value || '').trim();
   if (!dateIso) {
     dateIso = calendarSelectedIsoDate || todayStr();
   }
-
-  // Normalise date to YYYY-MM-DD
   if (dateIso.length > 10) dateIso = dateIso.slice(0, 10);
 
   const start = (startInput.value || '').trim();
   const end   = (endInput.value || '').trim();
   const title = (titleInput.value || '').trim();
   const notes = (notesArea ? notesArea.value : '').trim();
+  const repeat = repeatSelect ? (repeatSelect.value || 'none') : 'none';
 
   if (!title) {
     alert(calendarEntryMode === 'event'
@@ -3319,43 +3695,103 @@ function saveCalendarEntryFromModal() {
     return;
   }
 
+  const isEditing = !!editingCalendarEntry;
+
   if (calendarEntryMode === 'event') {
-  if (!events[dateIso]) events[dateIso] = [];
+    if (!events[dateIso]) events[dateIso] = [];
 
-  const repeatSelect = document.getElementById('entry-repeat');
-  const repeat = repeatSelect ? repeatSelect.value : 'none';
+    if (isEditing && editingCalendarEntry.mode === 'event') {
+      const { originalDateIso, id } = editingCalendarEntry;
+      const arr = events[originalDateIso] || [];
+      const idx = arr.findIndex(ev => ev.id === id);
 
-  events[dateIso].push({
-    id: 'ev_' + Date.now(),
-    start: start || '',
-    end: end || '',
-    title,
-    notes,
-    repeat    // 'none', 'daily', 'weekdays', 'weekly', 'monthly', 'yearly'
-  });
-} else {
-  if (!reminders[dateIso]) reminders[dateIso] = [];
-  reminders[dateIso].push({
-    id: 'rem_' + Date.now(),
-    time: start || '',
-    text: title
-  });
-}
+      if (idx === -1) {
+        // If something went wrong, fall back to adding a new one
+        events[dateIso].push({
+          id: 'ev_' + Date.now(),
+          start: start || '',
+          end: end || '',
+          title,
+          notes,
+          repeat
+        });
+      } else {
+        const ev = arr[idx];
+        ev.start  = start || '';
+        ev.end    = end || '';
+        ev.title  = title;
+        ev.notes  = notes;
+        ev.repeat = repeat;
 
+        // If the date changed, move the event to the new bucket
+        if (originalDateIso !== dateIso) {
+          arr.splice(idx, 1);
+          if (arr.length === 0) delete events[originalDateIso];
+          events[dateIso].push(ev);
+        }
+      }
 
+    } else {
+      // New event
+      events[dateIso].push({
+        id: 'ev_' + Date.now(),
+        start: start || '',
+        end: end || '',
+        title,
+        notes,
+        repeat
+      });
+    }
 
+  } else {
+    // Reminder
+    if (!reminders[dateIso]) reminders[dateIso] = [];
+
+    if (isEditing && editingCalendarEntry.mode === 'reminder') {
+      const { originalDateIso, id } = editingCalendarEntry;
+      const arr = reminders[originalDateIso] || [];
+      const idx = arr.findIndex(r => r.id === id);
+
+      if (idx === -1) {
+        reminders[dateIso].push({
+          id: 'rem_' + Date.now(),
+          time: start || '',
+          text: title
+        });
+      } else {
+        const r = arr[idx];
+        r.time = start || '';
+        r.text = title;
+
+        if (originalDateIso !== dateIso) {
+          arr.splice(idx, 1);
+          if (arr.length === 0) delete reminders[originalDateIso];
+          reminders[dateIso].push(r);
+        }
+      }
+
+    } else {
+      // New reminder
+      reminders[dateIso].push({
+        id: 'rem_' + Date.now(),
+        time: start || '',
+        text: title
+      });
+    }
+  }
+
+  // After saving, treat this as the selected date
+  calendarSelectedIsoDate = dateIso;
+  editingCalendarEntry = null;
 
   saveData();
-
-  // If user chose another date, move selection there so they see it
-  calendarSelectedIsoDate = dateIso;
   renderCalendar();
   renderCalendarEntriesForSelectedDate();
   renderTodayReminders();
   renderTodayEvents();
-
   closeCalendarEntryModal();
 }
+
 
 
 function addReminderForSelectedDate() {
@@ -3432,77 +3868,22 @@ function deleteEvent(dateIso, id) {
 }
 
 function editReminder(dateIso, id) {
-  if (!reminders[dateIso]) return;
-
-  const r = reminders[dateIso].find(x => x.id === id);
-  if (!r) return;
-
-  const newText = prompt("Edit reminder text:", r.text);
-  if (newText === null) return;  // cancelled
-  const trimmedText = newText.trim();
-  if (!trimmedText) {
-    alert("Reminder text cannot be empty.");
-    return;
-  }
-
-  const newTime = prompt(
-    "Edit reminder time (HH:MM, optional – leave blank to remove):",
-    r.time || ""
-  );
-  if (newTime === null) return;  // cancelled
-
-  r.text = trimmedText;
-  r.time = (newTime || "").trim();
-
-  saveData();
-  renderCalendarEntriesForSelectedDate();
-  if (dateIso === todayStr()) {
-    renderTodayReminders();
-  }
+  editingCalendarEntry = {
+    mode: 'reminder',
+    originalDateIso: dateIso,
+    id
+  };
+  openCalendarEntryModal('reminder');
 }
 
+
 function editEvent(dateIso, id) {
-  if (!events[dateIso]) return;
-
-  const ev = events[dateIso].find(x => x.id === id);
-  if (!ev) return;
-
-  const newTitle = prompt("Edit event title:", ev.title);
-  if (newTitle === null) return;
-  const trimmedTitle = newTitle.trim();
-  if (!trimmedTitle) {
-    alert("Event title cannot be empty.");
-    return;
-  }
-
-  const newStart = prompt(
-    "Edit start time (HH:MM, optional):",
-    ev.start || ev.time || ""
-  );
-  if (newStart === null) return;
-
-  const newEnd = prompt(
-    "Edit end time (HH:MM, optional – leave blank if not needed):",
-    ev.end || ""
-  );
-  if (newEnd === null) return;
-
-  const newNotes = prompt(
-    "Edit notes (optional – can be left blank):",
-    ev.notes || ""
-  );
-  if (newNotes === null) return;
-
-  ev.title = trimmedTitle;
-  ev.start = (newStart || "").trim();
-  ev.end   = (newEnd || "").trim();
-  ev.notes = (newNotes || "").trim();
-
-  saveData();
-  renderCalendarEntriesForSelectedDate();
-  if (dateIso === todayStr()) {
-    renderTodayEvents();
-  }
+  editingCalendarEntry = {
+    mode: 'event',
+    originalDateIso: dateIso,
+    id
+  };
+  openCalendarEntryModal('event');
 }
 
 
@@ -3594,6 +3975,19 @@ function renderCalendarEntriesForSelectedDate() {
 
   const itemsByDate = buildCalendarItems();
   const items = itemsByDate[calendarSelectedIsoDate] || [];
+  const holidayBanner = document.getElementById('calendar-holiday-banner');
+  if (holidayBanner) {
+    const holidays = items.filter(item => item.kind === 'holiday');
+    if (holidays.length) {
+      const names = holidays.map(h => h.text).join(', ');
+      holidayBanner.textContent = `Public holiday in Ireland: ${names}`;
+      holidayBanner.classList.remove('hidden');
+    } else {
+      holidayBanner.textContent = '';
+      holidayBanner.classList.add('hidden');
+    }
+  }
+
 
   // Apply filter to tasks / journal / gratitude
   const filtered = items.filter(item => {
@@ -3724,83 +4118,150 @@ function renderDayView() {
   if (!container || !calendarSelectedIsoDate) return;
 
   const dateIso = calendarSelectedIsoDate;
+
+  // Use your helper if it exists, else fall back
   const remindersForDay = (reminders[dateIso] || []).slice();
-  const eventsForDay    = (events[dateIso] || []).slice();
+  const eventsForDay = typeof getEventsForDate === 'function'
+    ? getEventsForDate(dateIso).slice()
+    : (events[dateIso] || []).slice();
 
-  // Normalise times for sorting
-  remindersForDay.forEach(r => { r._time = r.time || ''; });
-  eventsForDay.forEach(ev => { ev._time = ev.start || ev.time || ''; });
+  // Separate all‑day items (no time) from timed ones
+  const allDayReminders = remindersForDay.filter(r => !r.time);
+  const allDayEvents    = eventsForDay.filter(ev => !ev.start && !ev.time);
+  const timedReminders  = remindersForDay.filter(r => r.time);
+  const timedEvents     = eventsForDay.filter(ev => ev.start || ev.time);
 
-  // Build slots from 06:00 to 22:00
-  const slots = [];
-  for (let h = 6; h <= 22; h++) {
-    const hourStr = String(h).padStart(2, '0') + ':00';
+  const dayStartHour = 6;   // 06:00
+  const dayEndHour   = 22;  // 22:00 (10pm)
+  const totalHours   = dayEndHour - dayStartHour;
+  const rowHeight    = 40;  // px per hour
 
-    const slotReminders = remindersForDay.filter(r => (r._time || '').slice(0, 2) === String(h).padStart(2, '0'));
-    const slotEvents    = eventsForDay.filter(ev => (ev._time || '').slice(0, 2) === String(h).padStart(2, '0'));
-
-    slots.push({ hourStr, slotReminders, slotEvents });
-  }
-
-  // All‑day items (no time)
-  const allDayReminders = remindersForDay.filter(r => !r._time);
-  const allDayEvents    = eventsForDay.filter(ev => !ev._time);
-
-  const parts = [];
-
-  // All‑day section
-  if (allDayReminders.length || allDayEvents.length) {
-    parts.push(`
-      <div class="mb-2">
-        <div class="text-[11px] text-white/60 mb-1">All day</div>
-        <div class="space-y-1">
-          ${allDayEvents.map(ev => `
-            <div class="px-3 py-2 rounded-2xl bg-sky-500/20 border border-sky-400/60">
-              <div class="text-[11px] text-white/80">Event · ${ev.title}</div>
-              ${ev.notes ? `<div class="text-[11px] text-white/60 whitespace-pre-line">${ev.notes}</div>` : ''}
-            </div>
-          `).join('')}
-          ${allDayReminders.map(r => `
-            <div class="px-3 py-2 rounded-2xl bg-purple-500/20 border border-purple-400/60">
-              <div class="text-[11px] text-white/80">Reminder · ${r.text}</div>
-            </div>
-          `).join('')}
-        </div>
+  // Build hour labels for the left column
+  const hourLabels = [];
+  for (let h = dayStartHour; h < dayEndHour; h++) {
+    const label = String(h).padStart(2, '0') + ':00';
+    hourLabels.push(`
+      <div class="h-10 text-[11px] text-white/50 flex items-start justify-end pr-1 pt-1">
+        ${label}
       </div>
     `);
   }
 
-  // Hourly slots
-  parts.push(`
+  // Background grid rows in the right column
+  const backgroundRows = [];
+  for (let i = 0; i < totalHours; i++) {
+    const topPx = i * rowHeight;
+    backgroundRows.push(`
+      <div class="absolute left-0 right-0 border-t border-white/10" style="top:${topPx}px"></div>
+    `);
+  }
+
+  // Build event blocks spanning from start to end
+  const eventBlocks = [];
+  timedEvents.forEach((ev, idx) => {
+    const startStr = ev.start || ev.time || '09:00';
+    const endStr   = ev.end || startStr;
+
+    let startMinutes = parseTimeToMinutes(startStr);
+    let endMinutes   = parseTimeToMinutes(endStr);
+
+    if (startMinutes === null) startMinutes = dayStartHour * 60;
+    if (endMinutes === null || endMinutes <= startMinutes) {
+      endMinutes = startMinutes + 60; // default 1‑hour block
+    }
+
+    // Clamp to visible window
+    const windowStart = dayStartHour * 60;
+    const windowEnd   = dayEndHour * 60;
+    if (endMinutes <= windowStart || startMinutes >= windowEnd) {
+      return; // lies completely outside
+    }
+    const clampedStart = Math.max(startMinutes, windowStart);
+    const clampedEnd   = Math.min(endMinutes, windowEnd);
+
+    const top    = ((clampedStart - windowStart) / 60) * rowHeight;
+    const height = Math.max(30, ((clampedEnd - clampedStart) / 60) * rowHeight - 4);
+
+    // Simple horizontal staggering if multiple overlapping events
+    const offsetX = (idx % 3) * 8;   // px
+    const widthCalc = idx > 0 ? 'calc(100% - 12px)' : '100%';
+
+    const timeLabel = `${startStr}${ev.end ? '–' + ev.end : ''}`;
+
+    eventBlocks.push(`
+      <div
+        class="absolute rounded-2xl bg-sky-500/15 border border-sky-400/70 px-3 py-1.5 text-xs text-white/90 overflow-hidden"
+        style="top:${top}px; height:${height}px; left:${offsetX}px; width:${widthCalc};"
+      >
+        <div class="text-[11px] text-white/70 mb-0.5">${timeLabel}</div>
+        <div class="font-medium truncate">${ev.title || 'Event'}</div>
+        ${ev.notes ? `<div class="text-[11px] text-white/60 mt-0.5 line-clamp-2">${ev.notes}</div>` : ''}
+      </div>
+    `);
+  });
+
+  // Build reminder markers (small chips at their time)
+  const reminderMarkers = [];
+  timedReminders.forEach(r => {
+    const t = parseTimeToMinutes(r.time);
+    if (t === null) return;
+
+    const windowStart = dayStartHour * 60;
+    const windowEnd   = dayEndHour * 60;
+    if (t < windowStart || t > windowEnd) return;
+
+    const top = ((t - windowStart) / 60) * rowHeight - 8;
+
+    reminderMarkers.push(`
+      <div
+        class="absolute right-2 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/70 text-[10px] text-purple-100"
+        style="top:${top}px;"
+      >
+        ${r.time} · ${r.text}
+      </div>
+    `);
+  });
+
+  // All‑day items section (above the timeline)
+  const allDaySection = (allDayEvents.length || allDayReminders.length)
+    ? `
+      <div class="mb-3">
+        <div class="text-[11px] text-white/60 mb-1">All day</div>
+        <div class="space-y-1">
+          ${allDayEvents.map(ev => `
+            <div class="px-3 py-2 rounded-2xl bg-sky-500/20 border border-sky-400/60 text-xs">
+              <span class="font-medium">Event · ${ev.title || 'Untitled'}</span>
+              ${ev.notes ? `<div class="text-white/70 mt-0.5 whitespace-pre-line">${ev.notes}</div>` : ''}
+            </div>
+          `).join('')}
+          ${allDayReminders.map(r => `
+            <div class="px-3 py-2 rounded-2xl bg-purple-500/20 border border-purple-400/60 text-xs">
+              <span class="font-medium">Reminder · ${r.text}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `
+    : '';
+
+  container.innerHTML = `
+    ${allDaySection}
     <div class="grid grid-cols-[60px,1fr] gap-x-3">
-      ${slots.map(slot => {
-        const hasContent = slot.slotReminders.length || slot.slotEvents.length;
-        const rowContent = hasContent
-          ? `
-            ${slot.slotEvents.map(ev => `
-              <div class="mb-1 px-3 py-1.5 rounded-2xl bg-sky-500/15 border border-sky-400/60">
-                <div class="text-[11px] text-white/80">Event · ${ev.title}</div>
-                ${ev.notes ? `<div class="text-[11px] text-white/60 whitespace-pre-line">${ev.notes}</div>` : ''}
-              </div>
-            `).join('')}
-            ${slot.slotReminders.map(r => `
-              <div class="mb-1 px-3 py-1.5 rounded-2xl bg-purple-500/15 border border-purple-400/60">
-                <div class="text-[11px] text-white/80">Reminder · ${r.text}</div>
-              </div>
-            `).join('')}
-          `
-          : `<div class="text-[10px] text-white/20 border-b border-white/10 h-6"></div>`;
+      <!-- Left: hour labels -->
+      <div>
+        ${hourLabels.join('')}
+      </div>
 
-        return `
-          <div class="text-[11px] text-white/50 pt-1">${slot.hourStr}</div>
-          <div>${rowContent}</div>
-        `;
-      }).join('')}
+      <!-- Right: timeline with background rows and absolute event blocks -->
+      <div class="relative" style="height:${totalHours * rowHeight}px">
+        ${backgroundRows.join('')}
+        ${eventBlocks.join('')}
+        ${reminderMarkers.join('')}
+      </div>
     </div>
-  `);
-
-  container.innerHTML = parts.join('');
+  `;
 }
+
 
 function renderWeekView() {
   const container = document.getElementById('calendar-view-week');
