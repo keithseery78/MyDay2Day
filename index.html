@@ -910,6 +910,24 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
               placeholder="Details, location, or anything you want to remember."
             ></textarea>
           </div>
+
+          <!-- Repeat options (events only) -->
+          <div id="entry-repeat-row">
+            <label class="block mb-1 text-white/70">Repeat</label>
+            <select
+              id="entry-repeat"
+              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+            >
+              <option value="none">Does not repeat</option>
+              <option value="daily">Every day</option>
+              <option value="weekdays">Every weekday (Mon–Fri)</option>
+              <option value="weekly">Every week</option>
+              <option value="fortnightly">Every 2 weeks</option>
+              <option value="monthly">Every month</option>
+
+              <option value="yearly">Every year</option>
+            </select>
+          </div>
         </div>
 
         <button
@@ -923,6 +941,7 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
 
   </div> <!-- close .glass-card -->
 </div>   <!-- close #calendar-section -->
+
 
 
 <!-- SETTINGS TAB -->
@@ -2967,6 +2986,88 @@ function formatIsoToNice(iso) {
   });
 }
 
+function eventOccursOnDate(ev, startDateIso, targetIso) {
+  const startDate = new Date(startDateIso);
+  const targetDate = new Date(targetIso);
+
+  // If target is before the start, it cannot occur
+  if (targetDate < startDate) return false;
+
+  // No repeat or unrecognised repeat → only on its own date
+  if (!ev.repeat || ev.repeat === 'none') {
+    return targetIso === startDateIso;
+  }
+
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((targetDate - startDate) / oneDayMs);
+  if (diffDays < 0) return false;
+
+  switch (ev.repeat) {
+    case 'daily':
+      // every day from the start date onwards
+      return true;
+
+    case 'weekdays': {
+      // Monday–Friday only
+      const day = targetDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+      return day >= 1 && day <= 5;
+    }
+
+case 'weekly':
+      // every 7 days
+      return diffDays % 7 === 0;
+
+    case 'fortnightly':
+      // every 14 days
+      return diffDays % 14 === 0;
+
+    case 'monthly': {
+      // same day-of-month each month
+      const sameDay = startDate.getDate() === targetDate.getDate();
+      const monthDiff =
+        (targetDate.getFullYear() - startDate.getFullYear()) * 12 +
+        (targetDate.getMonth() - startDate.getMonth());
+      return monthDiff >= 0 && sameDay;
+    }
+
+    case 'yearly':
+      // same month and day each year
+      return (
+        targetDate.getMonth() === startDate.getMonth() &&
+        targetDate.getDate() === startDate.getDate() &&
+        targetDate.getFullYear() >= startDate.getFullYear()
+      );
+
+    default:
+      // fallback: treat as non-repeating
+      return targetIso === startDateIso;
+  }
+}
+
+
+function getEventsForDate(dateIso) {
+  const list = [];
+
+  // Events stored explicitly under this date
+  if (events[dateIso]) {
+    list.push(...events[dateIso]);
+  }
+
+  // Recurring events from earlier dates
+  Object.keys(events).forEach(sourceIso => {
+    if (sourceIso === dateIso) return;
+    const arr = events[sourceIso];
+    arr.forEach(ev => {
+      if (ev.repeat && ev.repeat !== 'none' &&
+          eventOccursOnDate(ev, sourceIso, dateIso)) {
+        list.push(ev);
+      }
+    });
+  });
+
+  return list;
+}
+
 function changeCalendarMonth(delta) {
   // Move month forwards or backwards
   calendarMonth += delta;
@@ -3038,13 +3139,13 @@ function setCalendarViewMode(mode) {
 
 
 function renderCalendar() {
-  const monthLabelEl      = document.getElementById('calendar-month-label');
-  const gridEl            = document.getElementById('calendar-grid');
-  const selectedLabelEl   = document.getElementById('calendar-selected-date');
+  const monthLabelEl    = document.getElementById('calendar-month-label');
+  const gridEl          = document.getElementById('calendar-grid');
+  const selectedLabelEl = document.getElementById('calendar-selected-date');
 
   if (!monthLabelEl || !gridEl) return;
 
-  const itemsByDate = buildCalendarItems();
+  const itemsByDate  = buildCalendarItems();
   const firstOfMonth = new Date(calendarYear, calendarMonth, 1);
 
   // Month label
@@ -3066,50 +3167,57 @@ function renderCalendar() {
     cells.push('<div class="h-9"></div>');
   }
 
-for (let day = 1; day <= daysInMonth; day++) {
-  const date = new Date(calendarYear, calendarMonth, day);
-  const iso  = localDateToIso(date);  // use local calendar date
+  // Calendar days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(calendarYear, calendarMonth, day);
+    const iso  = localDateToIso(date);  // YYYY-MM-DD in local time
 
-  const hasItems =
-    !!itemsByDate[iso] ||
-    (reminders[iso] && reminders[iso].length > 0) ||
-    (events[iso] && events[iso].length > 0);
+    // 1) Are there any events (including recurring) for this date?
+    const recurringEvents = getEventsForDate(iso);
+    const hasRecurringEvents = recurringEvents.length > 0;
 
-  const isToday    = iso === todayIso;
-  const isSelected = iso === calendarSelectedIsoDate;
+    // 2) Are there any tasks / journal / gratitude / holidays for this date?
+    const hasItemsFromMap = !!itemsByDate[iso];
 
-  let baseClasses =
-    'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
+    // 3) Are there any reminders for this date?
+    const hasReminders = !!(reminders[iso] && reminders[iso].length > 0);
 
-  if (isSelected) {
-    baseClasses += 'bg-lime-400 text-black font-semibold';
-  } else if (isToday) {
-    baseClasses += 'border border-lime-300/70 text-lime-200';
-  } else if (hasItems) {
-    baseClasses += 'bg-white/10 border border-white/20';
-  } else {
-    baseClasses += 'text-white/50';
+    const hasItems = hasItemsFromMap || hasReminders || hasRecurringEvents;
+
+    const isToday    = iso === todayIso;
+    const isSelected = iso === calendarSelectedIsoDate;
+
+    let baseClasses =
+      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
+
+    if (isSelected) {
+      baseClasses += 'bg-lime-400 text-black font-semibold';
+    } else if (isToday) {
+      baseClasses += 'border border-lime-300/70 text-lime-200';
+    } else if (hasItems) {
+      baseClasses += 'bg-white/10 border border-white/20';
+    } else {
+      baseClasses += 'text-white/50';
+    }
+
+    const dot = hasItems
+      ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
+      : '';
+
+    cells.push(`
+      <button
+        class="${baseClasses} relative"
+        onclick="selectCalendarDate('${iso}')"
+      >
+        ${day}
+        ${dot}
+      </button>
+    `);
   }
-
-  const dot = hasItems
-    ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>'
-    : '';
-
-  cells.push(`
-    <button
-      class="${baseClasses} relative"
-      onclick="selectCalendarDate('${iso}')"
-    >
-      ${day}
-      ${dot}
-    </button>
-  `);
-}
-
 
   gridEl.innerHTML = cells.join('');
 
-  // Update selected date label
+  // Selected date label
   if (selectedLabelEl && calendarSelectedIsoDate) {
     selectedLabelEl.textContent = formatIsoToNice(calendarSelectedIsoDate);
   }
@@ -3123,6 +3231,7 @@ for (let day = 1; day <= daysInMonth; day++) {
     renderCalendarEntriesForSelectedDate();
   }
 }
+
 
 function openCalendarEntryModal(mode) {
   calendarEntryMode = mode === 'reminder' ? 'reminder' : 'event';
@@ -3211,22 +3320,30 @@ function saveCalendarEntryFromModal() {
   }
 
   if (calendarEntryMode === 'event') {
-    if (!events[dateIso]) events[dateIso] = [];
-    events[dateIso].push({
-      id: 'ev_' + Date.now(),
-      start: start || '',
-      end: end || '',
-      title,
-      notes
-    });
-  } else {
-    if (!reminders[dateIso]) reminders[dateIso] = [];
-    reminders[dateIso].push({
-      id: 'rem_' + Date.now(),
-      time: start || '',
-      text: title
-    });
-  }
+  if (!events[dateIso]) events[dateIso] = [];
+
+  const repeatSelect = document.getElementById('entry-repeat');
+  const repeat = repeatSelect ? repeatSelect.value : 'none';
+
+  events[dateIso].push({
+    id: 'ev_' + Date.now(),
+    start: start || '',
+    end: end || '',
+    title,
+    notes,
+    repeat    // 'none', 'daily', 'weekdays', 'weekly', 'monthly', 'yearly'
+  });
+} else {
+  if (!reminders[dateIso]) reminders[dateIso] = [];
+  reminders[dateIso].push({
+    id: 'rem_' + Date.now(),
+    time: start || '',
+    text: title
+  });
+}
+
+
+
 
   saveData();
 
@@ -3442,7 +3559,7 @@ function renderTodayEvents() {
   if (!container) return;
 
   const todayIso = todayStr();
-  const list = events[todayIso] || [];
+  const list = getEventsForDate(todayIso);
 
   if (list.length === 0) {
     container.innerHTML = '<p class="text-xs text-white/60">No events scheduled for today yet.</p>';
@@ -3542,9 +3659,10 @@ function renderCalendarEntriesForSelectedDate() {
     `;
   }).join('<div class="h-2"></div>');
 
-  // Events for this day
-  const dayEvents = events[calendarSelectedIsoDate] || [];
+    // Events for this day (including recurring)
+  const dayEvents = getEventsForDate(calendarSelectedIsoDate);
   dayEvents.sort((a, b) => (a.start || a.time || '').localeCompare(b.start || b.time || ''));
+
 
   const eventsHtml = dayEvents.map(ev => {
     const start = ev.start || ev.time || '';
