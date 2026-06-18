@@ -3386,23 +3386,31 @@ function getEventsForDate(dateIso) {
 
   // Events stored explicitly under this date
   if (events[dateIso]) {
-    list.push(...events[dateIso]);
+    events[dateIso].forEach(ev => {
+      // Copy and remember where it is stored
+      list.push({ ...ev, bucketIso: dateIso });
+    });
   }
 
-  // Recurring events from earlier dates
+  // Recurring / multi‑day events from other dates
   Object.keys(events).forEach(sourceIso => {
     if (sourceIso === dateIso) return;
     const arr = events[sourceIso];
     arr.forEach(ev => {
-      if (ev.repeat && ev.repeat !== 'none' &&
-          eventOccursOnDate(ev, sourceIso, dateIso)) {
-        list.push(ev);
+      if (
+        (ev.repeat && ev.repeat !== 'none') ||
+        (ev.endDateIso && ev.endDateIso >= sourceIso)
+      ) {
+        if (eventOccursOnDate(ev, sourceIso, dateIso)) {
+          list.push({ ...ev, bucketIso: sourceIso });
+        }
       }
     });
   });
 
   return list;
 }
+
 
 function changeCalendarMonth(delta) {
   // Move month forwards or backwards
@@ -4065,13 +4073,13 @@ function renderTodayEvents() {
           <div>${ev.title}</div>
           ${ev.notes ? `<div class="text-[11px] text-white/60">${ev.notes}</div>` : ''}
         </div>
-        <button
-          onclick="deleteEvent('${todayIso}','${ev.id}')"
-          class="ml-3 p-1 text-white/50 hover:text-red-400 text-[11px]"
-          title="Delete event"
-        >
-          ✕
-        </button>
+       <button
+  onclick="deleteEvent('${ev.bucketIso || todayIso}','${ev.id}')"
+  class="ml-3 p-1 text-white/50 hover:text-red-400 text-[11px]"
+  title="Delete event"
+>
+  ✕
+</button>
       </div>
     `;
   }).join('<div class="h-2"></div>');
@@ -4133,7 +4141,7 @@ function renderCalendarEntriesForSelectedDate() {
 
   // Reminders for this day
   const dayReminders = reminders[calendarSelectedIsoDate] || [];
-  const reminderHtml = dayReminders.map(r => {
+   const reminderHtml = dayReminders.map(r => {
     const timeLabel = r.time ? `<span class="text-[11px] text-white/60 mr-1">${r.time}</span>` : '';
     return `
       <div class="flex gap-3 items-start">
@@ -4145,13 +4153,12 @@ function renderCalendarEntriesForSelectedDate() {
         </div>
         <div class="flex flex-col items-end gap-1">
           <button
-  onclick="editEvent('${ev.startDateIso || calendarSelectedIsoDate}','${ev.id}')"
-  class="p-1 text-[11px] text-white/60 hover:text-lime-300"
-  title="Edit event"
->
-  Edit
-</button>
-
+            onclick="editReminder('${calendarSelectedIsoDate}','${r.id}')"
+            class="p-1 text-[11px] text-white/60 hover:text-lime-300"
+            title="Edit reminder"
+          >
+            Edit
+          </button>
           <button
             onclick="deleteReminder('${calendarSelectedIsoDate}','${r.id}')"
             class="p-1 text-white/50 hover:text-red-400 text-[11px]"
@@ -4163,6 +4170,7 @@ function renderCalendarEntriesForSelectedDate() {
       </div>
     `;
   }).join('<div class="h-2"></div>');
+
 
     // Events for this day (including recurring)
   const dayEvents = getEventsForDate(calendarSelectedIsoDate);
@@ -4191,19 +4199,21 @@ function renderCalendarEntriesForSelectedDate() {
         </div>
         <div class="flex flex-col items-end gap-1">
           <button
-            onclick="editEvent('${calendarSelectedIsoDate}','${ev.id}')"
-            class="p-1 text-[11px] text-white/60 hover:text-lime-300"
-            title="Edit event"
-          >
-            Edit
-          </button>
+  onclick="editEvent('${ev.bucketIso || calendarSelectedIsoDate}','${ev.id}')"
+  class="p-1 text-[11px] text-white/60 hover:text-lime-300"
+  title="Edit event"
+>
+  Edit
+</button>
+
           <button
-            onclick="deleteEvent('${calendarSelectedIsoDate}','${ev.id}')"
-            class="p-1 text-white/50 hover:text-red-400 text-[11px]"
-            title="Delete event"
-          >
-            ✕
-          </button>
+  onclick="deleteEvent('${ev.bucketIso || calendarSelectedIsoDate}','${ev.id}')"
+  class="p-1 text-white/50 hover:text-red-400 text-[11px]"
+  title="Delete event"
+>
+  ✕
+</button>
+
         </div>
       </div>
     `;
@@ -4230,7 +4240,7 @@ function renderDayView() {
 
   const dateIso = calendarSelectedIsoDate;
 
-  // Use your helper if it exists, else fall back
+  // Get reminders and events for this date
   const remindersForDay = (reminders[dateIso] || []).slice();
   const eventsForDay = typeof getEventsForDate === 'function'
     ? getEventsForDate(dateIso).slice()
@@ -4242,12 +4252,13 @@ function renderDayView() {
   const timedReminders  = remindersForDay.filter(r => r.time);
   const timedEvents     = eventsForDay.filter(ev => ev.start || ev.time);
 
-  const dayStartHour = 6;   // 06:00
-  const dayEndHour   = 22;  // 22:00 (10pm)
+  // Full day, like Outlook: 00:00 to 24:00
+  const dayStartHour = 0;
+  const dayEndHour   = 24;
   const totalHours   = dayEndHour - dayStartHour;
   const rowHeight    = 40;  // px per hour
 
-  // Build hour labels for the left column
+  // Hour labels on the left
   const hourLabels = [];
   for (let h = dayStartHour; h < dayEndHour; h++) {
     const label = String(h).padStart(2, '0') + ':00';
@@ -4258,7 +4269,7 @@ function renderDayView() {
     `);
   }
 
-  // Background grid rows in the right column
+  // Background grid rows on the right
   const backgroundRows = [];
   for (let i = 0; i < totalHours; i++) {
     const topPx = i * rowHeight;
@@ -4267,83 +4278,81 @@ function renderDayView() {
     `);
   }
 
- // Build event blocks spanning from start to end (with multi‑day support)
-const eventBlocks = [];
-timedEvents.forEach((ev, idx) => {
-  const thisIso   = dateIso;                        // the day we are drawing
-  const startIso  = ev.startDateIso || thisIso;     // original start day
-  const endIso    = ev.endDateIso || startIso;
+  // Event blocks (with multi‑day support)
+  const eventBlocks = [];
+  timedEvents.forEach((ev, idx) => {
+    const thisIso   = dateIso;                        // day we are drawing
+    const startIso  = ev.startDateIso || thisIso;     // original start date
+    const endIso    = ev.endDateIso || startIso;      // final date if multi‑day
 
-  const isMultiDay = endIso > startIso;
+    const isMultiDay = endIso > startIso;
 
-  const startStr = ev.start || ev.time || '09:00';
-  const endStr   = ev.end || startStr;
+    const startStr = ev.start || ev.time || '09:00';
+    const endStr   = ev.end || startStr;
 
-  // Default times in minutes
-  let startMinutes = parseTimeToMinutes(startStr);
-  let endMinutes   = parseTimeToMinutes(endStr);
+    let startMinutes = parseTimeToMinutes(startStr);
+    let endMinutes   = parseTimeToMinutes(endStr);
 
-  const windowStart = dayStartHour * 60;
-  const windowEnd   = dayEndHour * 60;
+    const windowStart = dayStartHour * 60;
+    const windowEnd   = dayEndHour * 60;
 
-  if (!isMultiDay) {
-    // Normal single‑day event: use the actual start/end times
-    if (startMinutes === null) startMinutes = dayStartHour * 60;
-    if (endMinutes === null || endMinutes <= startMinutes) {
-      endMinutes = startMinutes + 60;
-    }
-  } else {
-    // Multi‑day event: decide how much of the day to fill
-    if (thisIso === startIso) {
-      // First day: from actual start time until end of the visible day
+    if (!isMultiDay) {
+      // Normal single‑day event
       if (startMinutes === null) startMinutes = dayStartHour * 60;
-      endMinutes = windowEnd;
-    } else if (thisIso === endIso) {
-      // Last day: from start of visible day until actual end time
-      startMinutes = windowStart;
-      if (endMinutes === null) endMinutes = windowEnd;
-    } else if (thisIso > startIso && thisIso < endIso) {
-      // Middle days: fill the whole visible day
-      startMinutes = windowStart;
-      endMinutes   = windowEnd;
+      if (endMinutes === null || endMinutes <= startMinutes) {
+        endMinutes = startMinutes + 60;
+      }
     } else {
-      // This date is outside the multi‑day span
+      // Multi‑day event spanning several dates
+      if (thisIso === startIso) {
+        // First day: from actual start time to end of day
+        if (startMinutes === null) startMinutes = dayStartHour * 60;
+        endMinutes = windowEnd;
+      } else if (thisIso === endIso) {
+        // Last day: from start of day to actual end time
+        startMinutes = windowStart;
+        if (endMinutes === null) endMinutes = windowEnd;
+      } else if (thisIso > startIso && thisIso < endIso) {
+        // Middle day: entire visible day
+        startMinutes = windowStart;
+        endMinutes   = windowEnd;
+      } else {
+        // This date is outside the span of this event
+        return;
+      }
+    }
+
+    // Outside visible window
+    if (endMinutes <= windowStart || startMinutes >= windowEnd) {
       return;
     }
-  }
 
-  // Clamp to visible window
-  if (endMinutes <= windowStart || startMinutes >= windowEnd) {
-    return; // lies completely outside
-  }
+    const clampedStart = Math.max(startMinutes, windowStart);
+    const clampedEnd   = Math.min(endMinutes, windowEnd);
 
-  const clampedStart = Math.max(startMinutes, windowStart);
-  const clampedEnd   = Math.min(endMinutes, windowEnd);
+    const top    = ((clampedStart - windowStart) / 60) * rowHeight;
+    const height = Math.max(30, ((clampedEnd - clampedStart) / 60) * rowHeight - 4);
 
-  const top    = ((clampedStart - windowStart) / 60) * rowHeight;
-  const height = Math.max(30, ((clampedEnd - clampedStart) / 60) * rowHeight - 4);
+    // Simple horizontal staggering for overlapping events
+    const offsetX   = (idx % 3) * 8;
+    const widthCalc = idx > 0 ? 'calc(100% - 12px)' : '100%';
 
-  // Simple horizontal staggering if multiple overlapping events
-  const offsetX   = (idx % 3) * 8;   // px
-  const widthCalc = idx > 0 ? 'calc(100% - 12px)' : '100%';
+    const timeLabel = `${startStr}${ev.end ? '–' + ev.end : ''}`;
 
-  const timeLabel = `${startStr}${ev.end ? '–' + ev.end : ''}`;
+    eventBlocks.push(`
+      <div
+        class="absolute rounded-2xl bg-sky-500/15 border border-sky-400/70 px-3 py-1.5 text-xs text-white/90 overflow-hidden cursor-pointer"
+        style="top:${top}px; height:${height}px; left:${offsetX}px; width:${widthCalc};"
+        onclick="editEvent('${ev.bucketIso || dateIso}','${ev.id}')"
+      >
+        <div class="text-[11px] text-white/70 mb-0.5">${timeLabel}</div>
+        <div class="font-medium truncate">${ev.title || 'Event'}</div>
+        ${ev.notes ? `<div class="text-[11px] text-white/60 mt-0.5 line-clamp-2">${ev.notes}</div>` : ''}
+      </div>
+    `);
+  });
 
-  eventBlocks.push(`
-    <div
-      class="absolute rounded-2xl bg-sky-500/15 border border-sky-400/70 px-3 py-1.5 text-xs text-white/90 overflow-hidden cursor-pointer"
-      style="top:${top}px; height:${height}px; left:${offsetX}px; width:${widthCalc};"
-      onclick="editEvent('${startIso}','${ev.id}')"
-    >
-      <div class="text-[11px] text-white/70 mb-0.5">${timeLabel}</div>
-      <div class="font-medium truncate">${ev.title || 'Event'}</div>
-      ${ev.notes ? `<div class="text-[11px] text-white/60 mt-0.5 line-clamp-2">${ev.notes}</div>` : ''}
-    </div>
-  `);
-});
-
-
-  // Build reminder markers (small chips at their time)
+  // Reminder markers at their times
   const reminderMarkers = [];
   timedReminders.forEach(r => {
     const t = parseTimeToMinutes(r.time);
@@ -4365,7 +4374,7 @@ timedEvents.forEach((ev, idx) => {
     `);
   });
 
-  // All‑day items section (above the timeline)
+  // All‑day items at the top
   const allDaySection = (allDayEvents.length || allDayReminders.length)
     ? `
       <div class="mb-3">
@@ -4387,15 +4396,13 @@ timedEvents.forEach((ev, idx) => {
     `
     : '';
 
+  // Final render
   container.innerHTML = `
     ${allDaySection}
     <div class="grid grid-cols-[60px,1fr] gap-x-3">
-      <!-- Left: hour labels -->
       <div>
         ${hourLabels.join('')}
       </div>
-
-      <!-- Right: timeline with background rows and absolute event blocks -->
       <div class="relative" style="height:${totalHours * rowHeight}px">
         ${backgroundRows.join('')}
         ${eventBlocks.join('')}
@@ -4440,15 +4447,16 @@ for (let i = 0; i < 7; i++) {
     eventsForDay.sort((a, b) => (a._time || '').localeCompare(b._time || ''));
 
     const itemsHtml = `
-      ${eventsForDay.map(ev => {
-        const timeLabel = ev._time ? ev._time + ' · ' : '';
-        return `
-          <div class="mb-1 px-2 py-1.5 rounded-2xl bg-sky-500/15 border border-sky-400/60 cursor-pointer"
-               onclick="selectCalendarDate('${d.iso}')">
-            <div class="text-[11px] text-white/80 truncate">${timeLabel}${ev.title}</div>
-          </div>
-        `;
-      }).join('')}
+     ${eventsForDay.map(ev => {
+  const timeLabel = ev._time ? ev._time + ' · ' : '';
+  return `
+    <div class="mb-1 px-2 py-1.5 rounded-2xl bg-sky-500/15 border border-sky-400/60 cursor-pointer"
+         onclick="selectCalendarDate('${d.iso}')">
+      <div class="text-[11px] text-white/80 truncate">${timeLabel}${ev.title}</div>
+    </div>
+  `;
+}).join('')}
+
       ${remindersForDay.map(r => {
         const timeLabel = r._time ? r._time + ' · ' : '';
         return `
