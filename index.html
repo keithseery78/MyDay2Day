@@ -513,8 +513,89 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
           <button onclick="deleteCurrentFolder()" class="px-3 py-1.5 rounded-2xl border border-red-500/60 text-red-200">Delete</button>
         </div>
 
-        <!-- Task list -->
-        <div id="tasks-list" class="space-y-2 text-sm"></div>
+            <!-- Hidden legacy list (kept so old JS does not break) -->
+        <div id="tasks-list" class="space-y-2 text-sm hidden"></div>
+
+        <!-- BOX 1: Today’s tasks -->
+        <div class="mt-4 bg-black/40 border border-white/10 rounded-3xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium">Today’s tasks</h3>
+            <div class="flex text-[11px] border border-white/20 rounded-2xl overflow-hidden">
+              <button
+                id="tasks-today-filter-outstanding"
+                onclick="setTasksTodayFilter('outstanding')"
+                class="px-3 py-1.5 bg-white/10"
+              >
+                Outstanding
+              </button>
+              <button
+                id="tasks-today-filter-completed"
+                onclick="setTasksTodayFilter('completed')"
+                class="px-3 py-1.5 bg-transparent text-white/70"
+              >
+                Completed
+              </button>
+            </div>
+          </div>
+
+          <div id="tasks-today-list" class="space-y-2 text-sm">
+            <!-- Filled by renderTodayTasksBox() -->
+          </div>
+        </div>
+
+        <!-- Toggle button for Box 2 -->
+        <div class="mt-3 text-center">
+          <button
+            id="tasks-all-toggle-btn"
+            onclick="toggleAllTasksPanel()"
+            class="px-4 py-2 rounded-3xl border border-white/25 text-[11px]"
+          >
+            Show all tasks
+          </button>
+        </div>
+
+        <!-- BOX 2: All tasks (collapsed by default) -->
+        <div
+          id="tasks-all-panel"
+          class="mt-3 bg-black/30 border border-white/10 rounded-3xl p-4 hidden"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium">All tasks</h3>
+            <div class="flex items-center gap-2 text-[11px] text-white/70">
+              <span>View</span>
+              <div class="flex border border-white/20 rounded-2xl overflow-hidden">
+                <button
+                  id="tasks-all-filter-outstanding"
+                  onclick="setTasksAllFilter('outstanding')"
+                  class="px-3 py-1.5 bg-white/10"
+                >
+                  Outstanding
+                </button>
+                <button
+                  id="tasks-all-filter-completed"
+                  onclick="setTasksAllFilter('completed')"
+                  class="px-3 py-1.5 bg-transparent text-white/70"
+                >
+                  Completed
+                </button>
+              </div>
+
+              <span class="ml-3">Folder</span>
+<select
+  id="tasks-all-folder-filter"
+  onchange="setTasksAllFolderFilter(this.value)"
+  class="bg-black/60 border border-white/20 rounded-2xl px-2 py-1 text-[11px]"
+>
+  <option value="all">All folders</option>
+  <!-- actual folder options are injected from JS -->
+</select>
+            </div>
+          </div>
+
+          <div id="tasks-all-list" class="space-y-2 text-sm max-h-64 overflow-y-auto">
+            <!-- Filled by renderAllTasksBox() -->
+          </div>
+        </div>
 
         <!-- New task (modal only) -->
         <div class="mt-6 pt-4 border-t border-white/10 text-sm">
@@ -525,7 +606,8 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
             + Add Task
           </button>
         </div>
-</div> 
+      </div> <!-- end main glass card -->
+
 
       <!-- Custom Focus Timer (in Tasks) -->
       <div class="glass-card rounded-3xl p-7 mt-4">
@@ -620,6 +702,16 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
         >
       </div>
 
+      <!-- Date -->
+      <div>
+        <label class="block mb-1 text-white/70">Date</label>
+        <input
+          id="task-modal-date"
+          type="date"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+        >
+      </div>
+
       <!-- XP + Priority -->
       <div class="flex gap-3">
         <div class="w-24">
@@ -635,6 +727,7 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
           <span class="text-white/80 text-xs">Mark as priority</span>
         </label>
       </div>
+
 
       <!-- Folder -->
       <div>
@@ -1263,6 +1356,12 @@ let editingTaskIndex = null;   // null = new task, number = editing existing tas
 let editingCalendarEntry = null; 
 // { mode: 'event' | 'reminder', originalDateIso: 'YYYY-MM-DD', id: string } when editing
 
+let showAllTasksPanel   = false;
+let tasksTodayFilter    = 'outstanding';  // 'outstanding' | 'completed'
+let tasksAllFilter      = 'outstanding';  // 'outstanding' | 'completed'
+let tasksAllSortBy      = 'date';         // keep for now, always sort by date
+let tasksAllFolderFilter = 'all';         // 'all' or a folderId
+
 
     let streak = 0;
     let lastEngagementDate = null;  // YYYY-MM-DD
@@ -1520,6 +1619,12 @@ if (storedTasks) {
 tasks.forEach(t => {
   if (!t.folderId) t.folderId = 'inbox';
   if (!t.createdIsoDate) t.createdIsoDate = todayStr();
+
+  // NEW: default scheduled date = created date
+  if (!t.scheduledIsoDate) {
+    t.scheduledIsoDate = t.createdIsoDate;
+  }
+
   // If a task is already done, ensure it has a completion date
   if (t.done && !t.completedIsoDate) t.completedIsoDate = todayStr();
   // Track whether XP has been awarded for this completion
@@ -1527,6 +1632,7 @@ tasks.forEach(t => {
     t.xpAwarded = !!t.done;
   }
 });
+
 
 const storedJournal = localStorage.getItem('mydayjournal');
 journalEntries = storedJournal ? JSON.parse(storedJournal) : [];
@@ -2071,6 +2177,27 @@ function addJournalTemplateFromTextarea() {
 
 
       container.innerHTML = chips.join('');
+  // Also refresh the All‑tasks folder filter drop‑down
+  const folderFilterSelect = document.getElementById('tasks-all-folder-filter');
+  if (folderFilterSelect) {
+    const options = [
+      '<option value="all">All folders</option>',
+      ...folders.map(f => `<option value="${f.id}">${f.name}</option>`)
+    ];
+    folderFilterSelect.innerHTML = options.join('');
+
+    // Keep current selection if still valid
+    if (
+      tasksAllFolderFilter !== 'all' &&
+      folders.some(f => f.id === tasksAllFolderFilter)
+    ) {
+      folderFilterSelect.value = tasksAllFolderFilter;
+    } else {
+      tasksAllFolderFilter = 'all';
+      folderFilterSelect.value = 'all';
+    }
+  }
+
     }
 
     function setCurrentFolder(id) {
@@ -2142,12 +2269,14 @@ function promptRenameFolder() {
 // ---------- TASK MODAL ----------
 
 function openTaskModal(index) {
-  const modal      = document.getElementById('task-entry-modal');
+    const modal      = document.getElementById('task-entry-modal');
   const titleEl    = document.getElementById('task-modal-title');
   const textInput  = document.getElementById('task-modal-text');
+  const dateInput  = document.getElementById('task-modal-date');
   const xpInput    = document.getElementById('task-modal-xp');
   const prioInput  = document.getElementById('task-modal-priority');
   const folderSelect = document.getElementById('task-modal-folder');
+
 
   if (!modal || !textInput || !xpInput || !prioInput || !folderSelect) return;
 
@@ -2162,22 +2291,23 @@ function openTaskModal(index) {
   });
 
 // "New task" mode
-if (index === null || typeof index === 'undefined') {
-  editingTaskIndex = null;
-  if (titleEl) titleEl.textContent = 'New task';
-  textInput.value = '';
-  xpInput.value   = '10';
-  prioInput.checked = false;
+  if (index === null || typeof index === 'undefined') {
+    editingTaskIndex = null;
+    if (titleEl) titleEl.textContent = 'New task';
+    textInput.value = '';
+    xpInput.value   = '10';
+    prioInput.checked = false;
 
-  // Default folder = current folder, or the first folder if we are in "All"
-  let fallbackFolder = currentFolderId;
-  if (fallbackFolder === 'all') {
-    fallbackFolder = folders[0]?.id || '';
-  }
-  folderSelect.value = fallbackFolder;
-}
- 
-else {
+    // Default date = today
+    if (dateInput) dateInput.value = todayStr();
+
+    // Default folder = current folder, or the first folder if we are in "All"
+    let fallbackFolder = currentFolderId;
+    if (fallbackFolder === 'all') {
+      fallbackFolder = folders[0]?.id || '';
+    }
+    folderSelect.value = fallbackFolder;
+  } else {
     // Editing existing task
     const task = tasks[index];
     if (!task) return;
@@ -2190,7 +2320,13 @@ else {
 
     const folderId = task.folderId || 'inbox';
     folderSelect.value = folderId;
+
+    // Show scheduled date (or created date) when editing
+    if (dateInput) {
+      dateInput.value = task.scheduledIsoDate || task.createdIsoDate || todayStr();
+    }
   }
+
 
   modal.classList.remove('hidden');
   modal.classList.add('flex');
@@ -2208,16 +2344,24 @@ function closeTaskModal() {
 
 function saveTaskFromModal() {
   const textInput  = document.getElementById('task-modal-text');
+  const dateInput  = document.getElementById('task-modal-date');
   const xpInput    = document.getElementById('task-modal-xp');
   const prioInput  = document.getElementById('task-modal-priority');
   const folderSelect = document.getElementById('task-modal-folder');
 
+
   if (!textInput || !xpInput || !prioInput || !folderSelect) return;
 
-  const text = (textInput.value || '').trim();
+    const text = (textInput.value || '').trim();
   if (!text) {
     alert("Task text cannot be empty.");
     return;
+  }
+
+  // Scheduled date (default to today if empty)
+  let scheduledIsoDate = todayStr();
+  if (dateInput && dateInput.value) {
+    scheduledIsoDate = dateInput.value.slice(0, 10);
   }
 
   let xpVal = parseInt(xpInput.value, 10);
@@ -2227,8 +2371,9 @@ function saveTaskFromModal() {
   const folderIdForTask = folderSelect.value || (currentFolderId === 'all' ? 'inbox' : currentFolderId);
   const todayIso = todayStr();
 
-  if (editingTaskIndex === null) {
-    // Create new task (similar to addTask)
+
+   if (editingTaskIndex === null) {
+    // Create new task
     tasks.unshift({
       text,
       xp: xpVal,
@@ -2236,6 +2381,7 @@ function saveTaskFromModal() {
       priority,
       folderId: folderIdForTask,
       createdIsoDate: todayIso,
+      scheduledIsoDate,          // NEW
       completedIsoDate: null,
       xpAwarded: false
     });
@@ -2254,11 +2400,13 @@ function saveTaskFromModal() {
       }
     }
 
-    task.text     = text;
-    task.xp       = xpVal;
-    task.priority = priority;
-    task.folderId = folderIdForTask;
+    task.text           = text;
+    task.xp             = xpVal;
+    task.priority       = priority;
+    task.folderId       = folderIdForTask;
+    task.scheduledIsoDate = scheduledIsoDate;  // NEW
   }
+
 
   saveData();
 
@@ -2274,6 +2422,217 @@ function saveTaskFromModal() {
 
     // Tasks
     // Tasks
+
+function getTaskDisplayDate(task) {
+  return task.scheduledIsoDate || task.createdIsoDate || todayStr();
+}
+
+function getTaskFolderName(task) {
+  const folder = folders.find(f => f.id === task.folderId);
+  return folder ? folder.name : 'Inbox';
+}
+
+function setTasksTodayFilter(filter) {
+  tasksTodayFilter = filter === 'completed' ? 'completed' : 'outstanding';
+  // Update pill button styles
+  const btnOut = document.getElementById('tasks-today-filter-outstanding');
+  const btnCom = document.getElementById('tasks-today-filter-completed');
+  if (btnOut && btnCom) {
+    if (tasksTodayFilter === 'outstanding') {
+      btnOut.classList.add('bg-white/10');
+      btnOut.classList.remove('bg-transparent', 'text-white/70');
+      btnCom.classList.remove('bg-white/10');
+      btnCom.classList.add('bg-transparent', 'text-white/70');
+    } else {
+      btnCom.classList.add('bg-white/10');
+      btnCom.classList.remove('bg-transparent', 'text-white/70');
+      btnOut.classList.remove('bg-white/10');
+      btnOut.classList.add('bg-transparent', 'text-white/70');
+    }
+  }
+  renderTodayTasksBox();
+}
+
+function setTasksAllFilter(filter) {
+  tasksAllFilter = filter === 'completed' ? 'completed' : 'outstanding';
+  const btnOut = document.getElementById('tasks-all-filter-outstanding');
+  const btnCom = document.getElementById('tasks-all-filter-completed');
+  if (btnOut && btnCom) {
+    if (tasksAllFilter === 'outstanding') {
+      btnOut.classList.add('bg-white/10');
+      btnOut.classList.remove('bg-transparent', 'text-white/70');
+      btnCom.classList.remove('bg-white/10');
+      btnCom.classList.add('bg-transparent', 'text-white/70');
+    } else {
+      btnCom.classList.add('bg-white/10');
+      btnCom.classList.remove('bg-transparent', 'text-white/70');
+      btnOut.classList.remove('bg-white/10');
+      btnOut.classList.add('bg-transparent', 'text-white/70');
+    }
+  }
+  renderAllTasksBox();
+}
+
+function setTasksAllFolderFilter(value) {
+  tasksAllFolderFilter = value || 'all';
+  renderAllTasksBox();
+}
+
+
+function setTasksAllSort(value) {
+  tasksAllSortBy = (value === 'folder') ? 'folder' : 'date';
+  renderAllTasksBox();
+}
+
+function toggleAllTasksPanel() {
+  showAllTasksPanel = !showAllTasksPanel;
+  const panel = document.getElementById('tasks-all-panel');
+  const btn   = document.getElementById('tasks-all-toggle-btn');
+  if (!panel || !btn) return;
+
+  if (showAllTasksPanel) {
+    panel.classList.remove('hidden');
+    btn.textContent = 'Hide all tasks';
+    renderAllTasksBox();
+  } else {
+    panel.classList.add('hidden');
+    btn.textContent = 'Show all tasks';
+  }
+}
+
+function renderTodayTasksBox() {
+  const container = document.getElementById('tasks-today-list');
+  if (!container) return;
+
+  const todayIso = todayStr();
+
+  // Scope to current folder if not "all"
+  let scoped = tasks;
+  if (currentFolderId !== 'all') {
+    scoped = tasks.filter(t => t.folderId === currentFolderId);
+  }
+
+  let list;
+  if (tasksTodayFilter === 'completed') {
+    list = scoped.filter(
+      t => t.done && t.completedIsoDate === todayIso
+    );
+  } else {
+    // Outstanding today = not done and scheduled date up to today
+    list = scoped.filter(
+      t => !t.done && getTaskDisplayDate(t) <= todayIso
+    );
+  }
+
+  if (!list.length) {
+    container.innerHTML =
+      '<p class="text-white/50 text-xs">No tasks in this view.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(task => {
+    const i          = tasks.indexOf(task);
+    const dateLabel  = getTaskDisplayDate(task);
+    const folderName = getTaskFolderName(task);
+
+    return `
+      <div class="glass-card rounded-3xl p-4 flex items-start gap-3 text-sm ${task.priority ? 'ring-1 ring-lime-400/80' : ''}">
+        <input
+          type="checkbox"
+          ${task.done ? 'checked' : ''}
+          class="w-5 h-5 accent-lime-400 mt-1"
+          onchange="toggleTask(${i})"
+        >
+        <div class="flex-1">
+          <div class="${task.done ? 'line-through text-white/60' : ''}">${task.text}</div>
+          <div class="text-[11px] text-white/60 mt-0.5">
+            Date: ${dateLabel} · Folder: ${folderName}
+          </div>
+          ${task.priority
+            ? '<div class="mt-0.5 text-[10px] bg-lime-400/20 text-lime-300 inline-block px-2 py-0.5 rounded-full">Priority</div>'
+            : ''
+          }
+        </div>
+        <button
+          onclick="openTaskModal(${i})"
+          class="px-2 py-1 rounded-2xl border border-white/30 text-[11px] text-white/70 hover:text-lime-300"
+        >
+          Edit
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAllTasksBox() {
+  const panelVisible = showAllTasksPanel;
+  const container = document.getElementById('tasks-all-list');
+  if (!container || !panelVisible) return;
+
+  // Start with ALL tasks
+  let list = tasks.slice();
+
+  // View outstanding or completed
+  if (tasksAllFilter === 'completed') {
+    list = list.filter(t => t.done);
+  } else {
+    list = list.filter(t => !t.done);
+  }
+
+  // View by folder (all or a specific folderId)
+  if (tasksAllFolderFilter !== 'all') {
+    list = list.filter(t => t.folderId === tasksAllFolderFilter);
+  }
+
+  // Always sort by date (oldest first)
+  list.sort((a, b) => {
+    const da = getTaskDisplayDate(a);
+    const db = getTaskDisplayDate(b);
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return 0;
+  });
+
+
+  if (!list.length) {
+    container.innerHTML =
+      '<p class="text-white/50 text-xs">No tasks in this view.</p>';
+    return;
+  }
+
+  container.innerHTML = list.map(task => {
+    const i          = tasks.indexOf(task);
+    const dateLabel  = getTaskDisplayDate(task);
+    const folderName = getTaskFolderName(task);
+
+    return `
+      <div class="glass-card rounded-3xl p-4 flex items-start gap-3 text-sm ${task.priority ? 'ring-1 ring-lime-400/80' : ''}">
+        <input
+          type="checkbox"
+          ${task.done ? 'checked' : ''}
+          class="w-5 h-5 accent-lime-400 mt-1"
+          onchange="toggleTask(${i})"
+        >
+        <div class="flex-1">
+          <div class="${task.done ? 'line-through text-white/60' : ''}">${task.text}</div>
+          <div class="text-[11px] text-white/60 mt-0.5">
+            Date: ${dateLabel} · Folder: ${folderName}
+          </div>
+          <div class="text-[11px] text-white/60 mt-0.5">
+            XP: ${task.xp} ${task.priority ? '· Priority' : ''}
+          </div>
+        </div>
+        <button
+          onclick="openTaskModal(${i})"
+          class="px-2 py-1 rounded-2xl border border-white/30 text-[11px] text-white/70 hover:text-lime-300"
+        >
+          Edit
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
     function renderTasks(filter = 'all') {
       const container = document.getElementById('tasks-list');
       const countsEl  = document.getElementById('task-counts');
@@ -2345,6 +2704,12 @@ function saveTaskFromModal() {
           }).join('');
 
       updateHomeStats();
+
+      // Keep the new boxes in sync
+      renderTodayTasksBox();
+      if (showAllTasksPanel) {
+        renderAllTasksBox();
+      }
     }
 
     function deleteTask(index) {
@@ -3465,9 +3830,10 @@ function buildCalendarItems() {
   });
 
     // Tasks: created + completed
-  tasks.forEach(t => {
-    const createdDate = t.createdIsoDate || todayStr();
-    addItem(createdDate, {
+tasks.forEach(t => {
+    const createdDate   = t.createdIsoDate   || todayStr();
+    const scheduledDate = t.scheduledIsoDate || createdDate;
+    addItem(scheduledDate, {
       type: 'Task',
       kind: 'task_created',
       done: !!t.done,
@@ -5063,7 +5429,6 @@ window.onload = function () {
   renderTodayReminders();
   renderTodayEvents();
   showSection('today');
-  // Ensure calendar view buttons / containers match initial mode
   setCalendarViewMode('month');
 
   const xpTargetInput = document.getElementById('setting-xp-target');
@@ -5076,9 +5441,20 @@ window.onload = function () {
 
   setReflectionType('journal');
   renderReflectionsEntries();
-  renderFocusGoals();          // ← add this line
- initReflectionAutoExpand();   // ← add this line
+  renderFocusGoals();
+  initReflectionAutoExpand();
+
+  // Initialise the new task boxes
+  setTasksTodayFilter('outstanding');
+  setTasksAllFilter('outstanding');
 };
+const folderFilterSelect = document.getElementById('tasks-all-folder-filter');
+if (folderFilterSelect) {
+  tasksAllFolderFilter = 'all';
+  folderFilterSelect.value = 'all';
+}
+
+
 
 
 
