@@ -115,6 +115,24 @@ html {
       color: #6b7280;
     }
 
+
+/* Make Reflections buttons readable in light mode */
+body.theme-light #reflections-section .text-white\/90 {
+  color: #111827;  /* dark slate text on light background */
+}
+
+body.theme-light #reflections-section button:not(.btn-gradient) {
+  background-color: #ffffff;                 /* solid white buttons */
+  color: #111827;                            /* dark text */
+  border-color: rgba(148,163,184,0.7);       /* soft grey border */
+}
+
+/* Optional: slightly softer background for the history toggle etc. */
+body.theme-light #reflections-section button:not(.btn-gradient):hover {
+  background-color: #f3f4f6;                 /* light grey on hover */
+}
+
+
      body.theme-light #today-section .text-white\/80 {
      color: #111827;  /* dark slate for About & Insight text */
      }
@@ -498,19 +516,16 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
         <!-- Task list -->
         <div id="tasks-list" class="space-y-2 text-sm"></div>
 
-        <!-- New task -->
+        <!-- New task (modal only) -->
         <div class="mt-6 pt-4 border-t border-white/10 text-sm">
-          <input id="new-task" class="w-full bg-black/60 border border-white/20 rounded-3xl px-5 py-3.5 placeholder:text-white/50 text-sm" placeholder="New task..." onkeypress="if(event.key==='Enter') addTask()">
-          <div class="flex gap-3 mt-3">
-            <input id="new-task-xp" type="number" value="10" class="w-20 bg-black/60 border border-white/20 rounded-3xl px-4 py-3 text-center text-xs">
-            <label class="flex items-center gap-2 px-4 py-3 bg-black/60 border border-white/20 rounded-3xl flex-1 text-xs">
-              <input id="new-task-priority" type="checkbox" class="accent-lime-400">
-              <span>Priority</span>
-            </label>
-          </div>
-          <button onclick="openTaskModal(null)" class="mt-3 w-full btn-gradient text-black font-semibold py-3.5 rounded-3xl text-sm">+ Add Task</button>
+          <button
+            onclick="openTaskModal(null)"
+            class="w-full btn-gradient text-black font-semibold py-3.5 rounded-3xl text-sm"
+          >
+            + Add Task
+          </button>
         </div>
-      </div>
+</div> 
 
       <!-- Custom Focus Timer (in Tasks) -->
       <div class="glass-card rounded-3xl p-7 mt-4">
@@ -642,12 +657,12 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
   </div>
 </div>
 
-
-     <!-- REFLECTIONS TAB -->
+<!-- REFLECTIONS TAB -->
 <div id="reflections-section" class="section hidden max-w-md mx-auto p-4">
   <div class="glass-card rounded-3xl p-6">
-       <h2 class="text-2xl luxury-logo mb-2">Reflections</h2>
+    <h2 class="text-2xl luxury-logo mb-2">Reflections</h2>
 
+    <!-- Header / history -->
     <div class="flex items-center justify-between mb-3 text-[11px] text-white/60">
       <span>Journal and gratitude entries for today</span>
       <button
@@ -659,16 +674,13 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
       </button>
     </div>
 
-     <!-- Tip for today -->
-        <!-- Tip for today -->
+    <!-- Tip for today -->
     <div class="mb-4 bg-black/40 border border-white/15 rounded-3xl p-4">
       <h3 class="text-xs font-medium text-white/70 mb-1">Tip for today</h3>
       <p id="reflection-tip" class="text-xs text-white/80 leading-relaxed">
         <!-- Filled by setDailyReflectionTip() -->
       </p>
     </div>
-
-
 
     <!-- Toggle: Journal / Gratitude -->
     <div class="flex gap-2 mb-4 text-sm">
@@ -688,51 +700,76 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
       </button>
     </div>
 
-    <!-- Templates + Blank -->
-    <div class="flex items-center justify-between mb-3 text-xs text-white/70">
-      <div>
-        <div class="uppercase tracking-[0.18em] text-[10px]" id="reflection-template-label">
-          Journal templates
-        </div>
-        <div class="text-[11px]" id="reflection-template-hint">
-          Tap a template or start a blank entry.
-        </div>
-      </div>
+    <!-- Add entry buttons -->
+    <div class="space-y-2 mb-3">
       <button
-        onclick="openReflectionTemplates()"
-        class="px-3 py-2 rounded-2xl border border-white/30 text-[11px]"
+        onclick="startNewReflection('journal')"
+        class="w-full px-4 py-2 rounded-3xl border border-white/30 text-sm text-white/90 bg-white/5"
       >
-        Templates
+        + Add journal entry
+      </button>
+      <button
+        onclick="startNewReflection('gratitude')"
+        class="w-full px-4 py-2 rounded-3xl border border-white/20 text-sm text-white/90 bg-white/5"
+      >
+        + Add gratitude entry
       </button>
     </div>
 
-
-    <!-- Large scrollable text area -->
-    <div class="mb-4">
-      <textarea
-        id="reflection-input"
-        class="w-full bg-black/60 border border-white/20 rounded-3xl p-4 text-sm text-white h-64 resize-none overflow-y-auto"
-        placeholder="Take a moment to check in with yourself..."
-      ></textarea>
+    <div id="reflection-template-hint" class="mb-3 text-[11px] text-white/60">
+      Tap an entry type to add a new reflection.
     </div>
 
-    <!-- XP + Save -->
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 text-xs text-white/70">
-        <span>XP for this entry</span>
-        <input
-          id="reflection-xp"
-          type="number"
-          value="10"
-          class="w-16 bg-black/60 border border-white/20 rounded-2xl px-2 py-1.5 text-xs text-center"
+    <!-- Entry editor: hidden by default -->
+    <div id="reflection-editor" class="hidden">
+      <div class="flex items-center justify-between mb-2 text-xs text-white/70">
+        <div>
+          <div class="uppercase tracking-[0.18em] text-[10px]" id="reflection-template-label">
+            Journal templates
+          </div>
+          <div class="text-[11px]">
+            Choose a template or write freely.
+          </div>
+        </div>
+        <button
+          onclick="openReflectionTemplatesFromEditor()"
+          class="px-3 py-2 rounded-2xl border border-white/30 text-[11px]"
         >
+          Templates
+        </button>
       </div>
-      <button
-        onclick="saveReflectionEntry()"
-        class="flex-1 btn-gradient py-3.5 rounded-3xl text-sm text-black font-semibold text-center"
-      >
-        Save entry
-      </button>
+
+      <div class="mb-4">
+        <textarea
+          id="reflection-input"
+          class="w-full bg-black/60 border border-white/20 rounded-3xl p-4 text-sm text-white resize-none overflow-hidden"
+          placeholder="Take a moment to check in with yourself..."
+        ></textarea>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-xs text-white/70">
+          <span>XP for this entry</span>
+          <input
+            id="reflection-xp"
+            type="number"
+            value="10"
+            class="w-16 bg-black/60 border border-white/20 rounded-2xl px-2 py-1.5 text-xs text-center"
+          >
+        </div>
+        <button
+          onclick="saveReflectionEntry()"
+          class="flex-1 btn-gradient py-3.5 rounded-3xl text-sm text-black font-semibold text-center"
+        >
+          Save entry
+        </button>
+      </div>
+
+      <div class="mt-2 text-[11px] text-white/60 text-right">
+        <button onclick="hideReflectionEditor()" class="underline">
+          Cancel
+        </button>
+      </div>
     </div>
   </div>
 
@@ -746,15 +783,18 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
   class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
 >
   <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h3 id="reflection-templates-title" class="text-sm font-medium">Templates</h3>
-      <button
-        onclick="closeReflectionTemplates()"
-        class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
-      >
-        Close
-      </button>
-    </div>
+<div class="flex items-center justify-between mb-3">
+  <h3 id="reflection-templates-title" class="text-sm font-medium">Templates</h3>
+  <button
+    onclick="closeReflectionTemplates()"
+    class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+  >
+    Close
+  </button>
+</div>
+
+
+
 
     <div class="mb-3">
       <button
@@ -777,6 +817,45 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
     </div>
   </div>
 </div>
+
+
+    <!-- Reflection start chooser modal -->
+<div
+  id="reflection-start-modal"
+  class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
+>
+  <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
+    <h3 id="reflection-start-title" class="text-sm font-medium mb-2">
+      New entry
+    </h3>
+    <p id="reflection-start-subtitle" class="text-[11px] text-white/70 mb-4">
+      How would you like to start?
+    </p>
+
+    <div class="space-y-2 text-sm">
+      <button
+        onclick="reflectionStartUseTemplate()"
+        class="w-full px-3 py-2 rounded-2xl border border-white/30 text-white/90 bg-white/5"
+      >
+        Use a template
+      </button>
+      <button
+        onclick="reflectionStartBlank()"
+        class="w-full px-3 py-2 rounded-2xl border border-white/20 text-white/90 bg-white/5"
+      >
+        Start blank
+      </button>
+    </div>
+
+    <button
+      onclick="closeReflectionStartChooser()"
+      class="mt-3 w-full px-3 py-2 rounded-2xl border border-white/20 text-[11px] text-white/70"
+    >
+      Cancel
+    </button>
+  </div>
+</div>
+
 
 
 <!-- CALENDAR TAB -->
@@ -1160,7 +1239,8 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
 
     let tasks = [];
     let folders = [];
-    let currentFolderId = 'inbox'; // 'all' = all folders
+    let currentFolderId = 'all'; // 'all' = all folders
+
 
     let journalEntries = [];
     let gratitudeEntries = [];
@@ -1170,10 +1250,13 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
     let timerInterval = null;
     let timeLeft = 25 * 60;
     let currentReflectionType = 'journal'; // 'journal' or 'gratitude'
-    let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
+let reflectionEntryStartType = null;  // 'journal' or 'gratitude' for current start
+    let reflectionOpenedFromChooser = false; // track if templates came from chooser    
+let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
+let editingReflectionEntry = null; // { type: 'journal' | 'gratitude', id } or null
     let events = {};      // { "YYYY-MM-DD": [ { id, time, title, notes } ] }
     let calendarViewMode = 'month'; // 'day', 'week', or 'month'
-
+    
     let focusGoals = [];  // goals for the current focus session
     let calendarEntryMode = 'event'; // 'event' or 'reminder'
 let editingTaskIndex = null;   // null = new task, number = editing existing task
@@ -1419,10 +1502,11 @@ function renderFocusGoals() {
       const storedFolders = localStorage.getItem('mydayfolders');
       folders = storedFolders ? JSON.parse(storedFolders) : defaultFolders();
       const storedFolderId = localStorage.getItem('mydaycurrentfolder');
-      currentFolderId = storedFolderId || 'inbox';
-      if (currentFolderId !== 'all' && !folders.find(f => f.id === currentFolderId)) {
-        currentFolderId = 'inbox';
-      }
+currentFolderId = storedFolderId || 'all';
+if (currentFolderId !== 'all' && !folders.find(f => f.id === currentFolderId)) {
+  currentFolderId = 'all';
+}
+
 
       const storedTasks = localStorage.getItem('mydaytasks');
 if (storedTasks) {
@@ -1972,15 +2056,19 @@ function addJournalTemplateFromTextarea() {
       `);
 
       folders.forEach(f => {
-        chips.push(`
-          <button
-            class="px-3 py-1.5 rounded-2xl border text-[11px] whitespace-nowrap ${currentFolderId === f.id ? 'bg-lime-400 text-black border-lime-300' : 'bg-black/40 border-white/20 text-white/80'}"
-            onclick="setCurrentFolder('${f.id}')"
-          >
-            ${f.name}
-          </button>
-        `);
-      });
+  // Hide Inbox from the UI; All already covers everything
+  if (f.id === 'inbox') return;
+
+  chips.push(`
+    <button
+      class="px-3 py-1.5 rounded-2xl border text-[11px] whitespace-nowrap ${currentFolderId === f.id ? 'bg-lime-400 text-black border-lime-300' : 'bg-black/40 border-white/20 text-white/80'}"
+      onclick="setCurrentFolder('${f.id}')"
+    >
+      ${f.name}
+    </button>
+  `);
+});
+
 
       container.innerHTML = chips.join('');
     }
@@ -2038,11 +2126,8 @@ function promptRenameFolder() {
   // Remove the folder itself
   folders = folders.filter(f => f.id !== currentFolderId);
 
-  // Pick a sensible fallback folder
-  const inboxExists = folders.find(f => f.id === 'inbox');
-  if (inboxExists) {
-    currentFolderId = 'inbox';
-  } else if (folders.length > 0) {
+  // Pick a sensible fallback folder (no Inbox)
+  if (folders.length > 0) {
     currentFolderId = folders[0].id;  // first remaining folder
   } else {
     currentFolderId = 'all';          // no folders left, fall back to All view
@@ -2076,18 +2161,23 @@ function openTaskModal(index) {
     folderSelect.appendChild(opt);
   });
 
-  // "New task" mode
-  if (index === null || typeof index === 'undefined') {
-    editingTaskIndex = null;
-    if (titleEl) titleEl.textContent = 'New task';
-    textInput.value = '';
-    xpInput.value   = '10';
-    prioInput.checked = false;
+// "New task" mode
+if (index === null || typeof index === 'undefined') {
+  editingTaskIndex = null;
+  if (titleEl) titleEl.textContent = 'New task';
+  textInput.value = '';
+  xpInput.value   = '10';
+  prioInput.checked = false;
 
-    // Default folder = current folder (or inbox)
-    const fallbackFolder = currentFolderId === 'all' ? 'inbox' : currentFolderId;
-    folderSelect.value = fallbackFolder;
-  } else {
+  // Default folder = current folder, or the first folder if we are in "All"
+  let fallbackFolder = currentFolderId;
+  if (fallbackFolder === 'all') {
+    fallbackFolder = folders[0]?.id || '';
+  }
+  folderSelect.value = fallbackFolder;
+}
+ 
+else {
     // Editing existing task
     const task = tasks[index];
     if (!task) return;
@@ -2338,32 +2428,7 @@ function toggleReflectionHistory() {
       renderTasks(document.getElementById('task-filter').value);
     }
 
-    function addTask() {
-      const text = document.getElementById('new-task').value.trim();
-      if (!text) return;
-      const xpVal    = parseInt(document.getElementById('new-task-xp').value) || 10;
-      const priority = document.getElementById('new-task-priority').checked;
-      const folderIdForTask = currentFolderId === 'all' ? 'inbox' : currentFolderId;
-     tasks.unshift({
-  text,
-  xp: xpVal,
-  done: false,
-  priority,
-  folderId: folderIdForTask,
-  createdIsoDate: todayStr(),
-  completedIsoDate: null,
-  xpAwarded: false
-});
 
-
-      document.getElementById('new-task').value = '';
-      document.getElementById('new-task-priority').checked = false;
-      renderTasks(document.getElementById('task-filter').value || 'all');
-      renderMITs();
-      registerEngagement();
-      saveData();
-      updateHomeStats();
-    }
 
     function toggleTask(i) {
   const task = tasks[i];
@@ -2942,12 +3007,13 @@ function renderReflectionsEntries() {
         <div class="flex items-baseline justify-between gap-3">
           <div class="text-xs ${isJournal ? 'text-lime-300' : 'text-amber-300'}">${e.date}</div>
           <div class="flex gap-2 text-[11px]">
-            <button
-              class="px-2 py-1 rounded-2xl border border-white/30"
-              onclick="${isJournal ? `editJournalEntry('${e.id}')` : `editGratitudeEntry('${e.id}')`}"
-            >
-              Edit
-            </button>
+          <button
+  class="px-2 py-1 rounded-2xl border border-white/30"
+  onclick="editReflectionEntry('${isJournal ? 'journal' : 'gratitude'}','${e.id}')"
+>
+  Edit
+</button>
+
             <button
               class="px-2 py-1 rounded-2xl border border-red-400/70 text-red-200"
               onclick="${isJournal ? `deleteJournalEntry('${e.id}')` : `deleteGratitudeEntry('${e.id}')`}"
@@ -2988,11 +3054,12 @@ function renderReflectionsEntries() {
           <div class="text-xs ${isJournal ? 'text-lime-300' : 'text-amber-300'}">${dateLabel}</div>
           <div class="flex gap-2 text-[11px]">
             <button
-              class="px-2 py-1 rounded-2xl border border-white/30"
-              onclick="${isJournal ? `editJournalEntry('${e.id}')` : `editGratitudeEntry('${e.id}')`}"
-            >
-              Edit
-            </button>
+  class="px-2 py-1 rounded-2xl border border-white/30"
+  onclick="editReflectionEntry('${isJournal ? 'journal' : 'gratitude'}','${e.id}')"
+>
+  Edit
+</button>
+
             <button
               class="px-2 py-1 rounded-2xl border border-red-400/70 text-red-200"
               onclick="${isJournal ? `deleteJournalEntry('${e.id}')` : `deleteGratitudeEntry('${e.id}')`}"
@@ -3063,6 +3130,139 @@ function setReflectionType(type) {
   renderReflectionsEntries();
 }
 
+// ---------- REFLECTION ENTRY FLOW HELPERS ----------
+
+// Show the type-specific start chooser when user taps a button
+function startNewReflection(type) {
+  const normalised = type === 'gratitude' ? 'gratitude' : 'journal';
+  reflectionEntryStartType = normalised;
+  setReflectionType(normalised);  // updates toggle + labels
+  openReflectionStartChooser();
+}
+
+// Open the "How would you like to start?" modal
+function openReflectionStartChooser() {
+  const modal    = document.getElementById('reflection-start-modal');
+  const titleEl  = document.getElementById('reflection-start-title');
+  const subEl    = document.getElementById('reflection-start-subtitle');
+
+  if (!modal) return;
+
+  const isJournal = reflectionEntryStartType !== 'gratitude';
+
+  if (titleEl) {
+    titleEl.textContent = isJournal ? 'New journal entry' : 'New gratitude entry';
+  }
+  if (subEl) {
+    subEl.textContent = 'How would you like to start?';
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+// Close the start chooser without doing anything
+function closeReflectionStartChooser() {
+  const modal = document.getElementById('reflection-start-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  reflectionEntryStartType = null;
+  reflectionOpenedFromChooser = false;
+}
+
+// User chose "Use a template" in the chooser
+function reflectionStartUseTemplate() {
+  reflectionOpenedFromChooser = true;
+  closeReflectionStartChooser();
+  openReflectionTemplates();   // existing function, but wired into new flow
+}
+
+// User chose "Start blank" in the chooser
+function reflectionStartBlank() {
+  reflectionOpenedFromChooser = false;
+  closeReflectionStartChooser();
+  showReflectionEditor('');    // blank editor
+}
+
+// Show editor with given initial text (blank or template)
+function showReflectionEditor(initialText) {
+  const editor   = document.getElementById('reflection-editor');
+  const textarea = document.getElementById('reflection-input');
+  if (!editor || !textarea) return;
+
+  textarea.value = initialText || '';
+  editor.classList.remove('hidden');
+
+  // Auto‑expand once for existing content
+  autoExpandReflectionTextarea();
+
+  // Focus
+  setTimeout(() => textarea.focus(), 20);
+}
+
+// Hide editor and clear text
+function hideReflectionEditor() {
+  const editor   = document.getElementById('reflection-editor');
+  const textarea = document.getElementById('reflection-input');
+  if (!editor || !textarea) return;
+
+  textarea.value = '';
+  editor.classList.add('hidden');
+}
+
+// Re‑open templates whilst already editing (from the editor "Templates" button)
+function openReflectionTemplatesFromEditor() {
+  reflectionOpenedFromChooser = false; // coming from editor, not chooser
+  openReflectionTemplates();
+}
+
+// Handle Back button in Templates modal
+function handleReflectionTemplatesBack() {
+  closeReflectionTemplates();
+  if (reflectionOpenedFromChooser && reflectionEntryStartType) {
+    // Return to chooser if we originally came from it
+    openReflectionStartChooser();
+  }
+}
+
+// Auto‑expand logic for the reflection textarea
+function autoExpandReflectionTextarea() {
+  const textarea = document.getElementById('reflection-input');
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+// Set up auto‑expand listener (call once on load)
+function initReflectionAutoExpand() {
+  const textarea = document.getElementById('reflection-input');
+  if (!textarea) return;
+
+  textarea.addEventListener('input', autoExpandReflectionTextarea);
+}
+function editReflectionEntry(type, id) {
+  // Make sure type is valid and select the right list
+  const isJournal = type !== 'gratitude';
+  const list = isJournal ? journalEntries : gratitudeEntries;
+
+  const entry = list.find(e => e.id === id);
+  if (!entry) return;
+
+  // Switch the tab toggle so labels & colours match
+  setReflectionType(isJournal ? 'journal' : 'gratitude');
+
+  // Remember we are editing this entry
+  editingReflectionEntry = {
+    type: isJournal ? 'journal' : 'gratitude',
+    id
+  };
+
+  // Open the editor with the existing text
+  showReflectionEditor(entry.text);
+}
+
+
 function openReflectionTemplates() {
   const modal = document.getElementById('reflection-templates-modal');
   const title = document.getElementById('reflection-templates-title');
@@ -3114,23 +3314,25 @@ function closeReflectionTemplates() {
   modal.classList.remove('flex');
 }
 
+
 function useBlankReflectionTemplate() {
-  const area = document.getElementById('reflection-input');
-  if (!area) return;
-  area.value = '';
+  // Called from inside Templates modal
   closeReflectionTemplates();
+  showReflectionEditor('');
 }
+
 
 function useReflectionTemplate(id) {
   const isJournal = currentReflectionType === 'journal';
   const list = isJournal ? journalTemplates : gratitudeTemplates;
   const tpl = list.find(t => t.id === id);
-  const area = document.getElementById('reflection-input');
-  if (!tpl || !area) return;
+  if (!tpl) return;
 
-  area.value = tpl.content;
+  // Close templates and open editor with template text
   closeReflectionTemplates();
+  showReflectionEditor(tpl.content);
 }
+
 
 function saveCurrentReflectionAsTemplate() {
   const area = document.getElementById('reflection-input');
@@ -4671,19 +4873,54 @@ function saveReflectionEntry() {
   const area    = document.getElementById('reflection-input');
   if (!xpInput || !area) return;
 
-  const xpAmount = parseInt(xpInput.value, 10);
-  const amount = !xpAmount || xpAmount < 0 ? 0 : xpAmount;
-
-  if (currentReflectionType === 'journal') {
-    // Temporarily override default XP in saveJournalEntry
-    saveJournalEntryWithCustomXP(amount);
-  } else {
-    saveGratitudeEntryWithCustomXP(amount);
+  const text = (area.value || '').trim();
+  if (!text) {
+    alert("Write something before saving.");
+    return;
   }
 
-  // Re-render list for this type
+  const xpAmountRaw = parseInt(xpInput.value, 10);
+  const xpAmount = !xpAmountRaw || xpAmountRaw < 0 ? 0 : xpAmountRaw;
+
+  // EDIT EXISTING ENTRY
+  if (editingReflectionEntry) {
+    const { type, id } = editingReflectionEntry;
+    const isJournal = type === 'journal';
+    const list = isJournal ? journalEntries : gratitudeEntries;
+    const entry = list.find(e => e.id === id);
+    if (!entry) {
+      editingReflectionEntry = null;
+      hideReflectionEditor();
+      return;
+    }
+
+    entry.text = text;
+
+    // For edits we usually do NOT add XP again to avoid double‑counting.
+    // If you ever want to award XP on edits, you could add:
+    // if (xpAmount > 0) addXP(xpAmount, true);
+
+    saveData();
+    renderReflectionsEntries();
+    hideReflectionEditor();
+    editingReflectionEntry = null;
+    return;
+  }
+
+  // NEW ENTRY
+  if (currentReflectionType === 'journal') {
+    // Use the existing helper but temporarily inject the text
+    area.value = text;
+    saveJournalEntryWithCustomXP(xpAmount);
+  } else {
+    area.value = text;
+    saveGratitudeEntryWithCustomXP(xpAmount);
+  }
+
+  hideReflectionEditor();
   renderReflectionsEntries();
 }
+
 
 function saveJournalEntryWithCustomXP(xpAmount) {
   const area = document.getElementById('reflection-input') || document.getElementById('journal-input');
@@ -4829,7 +5066,6 @@ window.onload = function () {
   // Ensure calendar view buttons / containers match initial mode
   setCalendarViewMode('month');
 
-
   const xpTargetInput = document.getElementById('setting-xp-target');
   const rewardInput   = document.getElementById('setting-reward-text');
   if (xpTargetInput) xpTargetInput.value = xpTarget;
@@ -4841,7 +5077,9 @@ window.onload = function () {
   setReflectionType('journal');
   renderReflectionsEntries();
   renderFocusGoals();          // ← add this line
+ initReflectionAutoExpand();   // ← add this line
 };
+
 
 
 
