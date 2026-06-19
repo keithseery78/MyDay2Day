@@ -2521,11 +2521,12 @@ function renderTodayTasksBox() {
 
   let list;
   if (tasksTodayFilter === 'completed') {
+    // Tasks completed today only
     list = scoped.filter(
       t => t.done && t.completedIsoDate === todayIso
     );
   } else {
-    // Outstanding today = not done and scheduled date up to today
+    // Outstanding today = not done and scheduled date up to today (carry‑over)
     list = scoped.filter(
       t => !t.done && getTaskDisplayDate(t) <= todayIso
     );
@@ -2554,6 +2555,9 @@ function renderTodayTasksBox() {
           <div class="${task.done ? 'line-through text-white/60' : ''}">${task.text}</div>
           <div class="text-[11px] text-white/60 mt-0.5">
             Date: ${dateLabel} · Folder: ${folderName}
+          </div>
+          <div class="text-[11px] text-lime-300 mt-0.5">
+            XP: ${task.xp}
           </div>
           ${task.priority
             ? '<div class="mt-0.5 text-[10px] bg-lime-400/20 text-lime-300 inline-block px-2 py-0.5 rounded-full">Priority</div>'
