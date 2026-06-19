@@ -554,48 +554,55 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
           </button>
         </div>
 
-        <!-- BOX 2: All tasks (collapsed by default) -->
-        <div
-          id="tasks-all-panel"
-          class="mt-3 bg-black/30 border border-white/10 rounded-3xl p-4 hidden"
-        >
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-medium">All tasks</h3>
-            <div class="flex items-center gap-2 text-[11px] text-white/70">
-              <span>View</span>
-              <div class="flex border border-white/20 rounded-2xl overflow-hidden">
-                <button
-                  id="tasks-all-filter-outstanding"
-                  onclick="setTasksAllFilter('outstanding')"
-                  class="px-3 py-1.5 bg-white/10"
-                >
-                  Outstanding
-                </button>
-                <button
-                  id="tasks-all-filter-completed"
-                  onclick="setTasksAllFilter('completed')"
-                  class="px-3 py-1.5 bg-transparent text-white/70"
-                >
-                  Completed
-                </button>
-              </div>
-
-              <span class="ml-3">Folder</span>
-<select
-  id="tasks-all-folder-filter"
-  onchange="setTasksAllFolderFilter(this.value)"
-  class="bg-black/60 border border-white/20 rounded-2xl px-2 py-1 text-[11px]"
+<!-- BOX 2: All tasks (collapsed by default) -->
+<div
+  id="tasks-all-panel"
+  class="mt-3 bg-black/30 border border-white/10 rounded-3xl p-4 hidden"
 >
-  <option value="all">All folders</option>
-  <!-- actual folder options are injected from JS -->
-</select>
-            </div>
-          </div>
+  <!-- New header -->
+  <div class="mb-2">
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-sm font-medium">All tasks</h3>
+      <span class="text-[11px] text-white/60">
+        Sorted by date (oldest first)
+      </span>
+    </div>
 
-          <div id="tasks-all-list" class="space-y-2 text-sm max-h-64 overflow-y-auto">
-            <!-- Filled by renderAllTasksBox() -->
-          </div>
-        </div>
+    <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-white/70">
+      <span>View</span>
+      <div class="flex border border-white/20 rounded-2xl overflow-hidden">
+        <button
+          id="tasks-all-filter-outstanding"
+          onclick="setTasksAllFilter('outstanding')"
+          class="px-3 py-1.5 bg-white/10"
+        >
+          Outstanding
+        </button>
+        <button
+          id="tasks-all-filter-completed"
+          onclick="setTasksAllFilter('completed')"
+          class="px-3 py-1.5 bg-transparent text-white/70"
+        >
+          Completed
+        </button>
+      </div>
+
+      <span class="ml-1">Folder</span>
+      <select
+        id="tasks-all-folder-filter"
+        onchange="setTasksAllFolderFilter(this.value)"
+        class="bg-black/60 border border-white/20 rounded-2xl px-2 py-1 text-[11px] max-w-[150px]"
+      >
+        <!-- options filled from JS -->
+      </select>
+    </div>
+  </div>
+
+  <div id="tasks-all-list" class="space-y-2 text-sm max-h-64 overflow-y-auto">
+    <!-- Filled by renderAllTasksBox() -->
+  </div>
+</div>
+
 
         <!-- New task (modal only) -->
         <div class="mt-6 pt-4 border-t border-white/10 text-sm">
@@ -1357,10 +1364,10 @@ let editingCalendarEntry = null;
 // { mode: 'event' | 'reminder', originalDateIso: 'YYYY-MM-DD', id: string } when editing
 
 let showAllTasksPanel   = false;
-let tasksTodayFilter    = 'outstanding';  // 'outstanding' | 'completed'
-let tasksAllFilter      = 'outstanding';  // 'outstanding' | 'completed'
-let tasksAllSortBy      = 'date';         // keep for now, always sort by date
-let tasksAllFolderFilter = 'all';         // 'all' or a folderId
+let tasksTodayFilter    = 'outstanding';
+let tasksAllFilter      = 'outstanding';
+let tasksAllSortBy      = 'date';     // OK to leave, even if unused
+let tasksAllFolderFilter = 'all';     // <– add this line
 
 
     let streak = 0;
@@ -2633,6 +2640,27 @@ function renderAllTasksBox() {
   }).join('');
 }
 
+function buildAllTasksFolderOptions() {
+  const select = document.getElementById('tasks-all-folder-filter');
+  if (!select) return;
+
+  const current = tasksAllFolderFilter || 'all';
+
+  let optionsHtml = '<option value="all">All folders</option>';
+
+  folders
+    // do not show Inbox in this drop‑down
+    .filter(f => !(f.builtin && f.id === 'inbox'))
+    .forEach(f => {
+      optionsHtml += `<option value="${f.id}">${f.name}</option>`;
+    });
+
+  select.innerHTML = optionsHtml;
+  // keep previously chosen value if still valid
+  select.value = current;
+}
+
+
     function renderTasks(filter = 'all') {
       const container = document.getElementById('tasks-list');
       const countsEl  = document.getElementById('task-counts');
@@ -2704,6 +2732,8 @@ function renderAllTasksBox() {
           }).join('');
 
       updateHomeStats();
+  buildAllTasksFolderOptions();
+
 
       // Keep the new boxes in sync
       renderTodayTasksBox();
@@ -5443,6 +5473,8 @@ window.onload = function () {
   renderReflectionsEntries();
   renderFocusGoals();
   initReflectionAutoExpand();
+
+  buildAllTasksFolderOptions();
 
   // Initialise the new task boxes
   setTasksTodayFilter('outstanding');
