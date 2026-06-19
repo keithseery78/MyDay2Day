@@ -1184,7 +1184,7 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
             ></textarea>
           </div>
 
-          <!-- Repeat options (events only) -->
+                            <!-- Repeat options (events only) -->
           <div id="entry-repeat-row">
             <label class="block mb-1 text-white/70">Repeat</label>
             <select
@@ -1197,11 +1197,63 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
               <option value="weekly">Every week</option>
               <option value="fortnightly">Every 2 weeks</option>
               <option value="monthly">Every month</option>
-
               <option value="yearly">Every year</option>
             </select>
           </div>
-        </div>
+
+          <!-- Colour (events & reminders) -->
+          <div id="entry-colour-row" class="mt-2">
+            <label class="block mb-1 text-white/70">Colour</label>
+
+            <!-- hidden value used by JS -->
+            <input type="hidden" id="entry-colour" value="sky">
+
+            <div class="flex flex-wrap gap-2 text-[11px]">
+              <button
+                type="button"
+                data-entry-colour-swatch
+                data-colour-key="sky"
+                onclick="setEntryColour('sky')"
+                class="w-7 h-7 rounded-full bg-sky-500/80 border border-white/40"
+              ></button>
+              <button
+                type="button"
+                data-entry-colour-swatch
+                data-colour-key="indigo"
+                onclick="setEntryColour('indigo')"
+                class="w-7 h-7 rounded-full bg-indigo-500/80 border border-white/40"
+              ></button>
+              <button
+                type="button"
+                data-entry-colour-swatch
+                data-colour-key="emerald"
+                onclick="setEntryColour('emerald')"
+                class="w-7 h-7 rounded-full bg-emerald-500/80 border border-white/40"
+              ></button>
+              <button
+                type="button"
+                data-entry-colour-swatch
+                data-colour-key="amber"
+                onclick="setEntryColour('amber')"
+                class="w-7 h-7 rounded-full bg-amber-400/90 border border-white/40"
+              ></button>
+              <button
+                type="button"
+                data-entry-colour-swatch
+                data-colour-key="rose"
+                onclick="setEntryColour('rose')"
+                class="w-7 h-7 rounded-full bg-rose-500/80 border border-white/40"
+              ></button>
+              <button
+                type="button"
+                data-entry-colour-swatch
+                data-colour-key="violet"
+                onclick="setEntryColour('violet')"
+                class="w-7 h-7 rounded-full bg-violet-500/80 border border-white/40"
+              ></button>
+            </div>
+          </div>
+
 
         <button
           onclick="saveCalendarEntryFromModal()"
@@ -1404,6 +1456,66 @@ function parseTimeToMinutes(timeStr) {
   const m = parseInt(parts[1], 10);
   if (isNaN(h) || isNaN(m)) return null;
   return h * 60 + m;
+}
+
+// ---------------------------------------------------------------------------
+// EVENT / REMINDER COLOURS
+// ---------------------------------------------------------------------------
+
+const EVENT_COLOURS = {
+  sky: {
+    name: 'Sky',
+    pill:  'bg-sky-500/20 text-sky-200 border-sky-400/60',
+    block: 'bg-sky-500/15 border-sky-400/70'
+  },
+  indigo: {
+    name: 'Indigo',
+    pill:  'bg-indigo-500/20 text-indigo-200 border-indigo-400/60',
+    block: 'bg-indigo-500/15 border-indigo-400/70'
+  },
+  emerald: {
+    name: 'Emerald',
+    pill:  'bg-emerald-500/20 text-emerald-200 border-emerald-400/60',
+    block: 'bg-emerald-500/15 border-emerald-400/70'
+  },
+  amber: {
+    name: 'Amber',
+    pill:  'bg-amber-500/20 text-amber-200 border-amber-400/60',
+    block: 'bg-amber-500/15 border-amber-400/70'
+  },
+  rose: {
+    name: 'Rose',
+    pill:  'bg-rose-500/20 text-rose-200 border-rose-400/60',
+    block: 'bg-rose-500/15 border-rose-400/70'
+  },
+  violet: {
+    name: 'Violet',
+    pill:  'bg-violet-500/20 text-violet-200 border-violet-400/60',
+    block: 'bg-violet-500/15 border-violet-400/70'
+  }
+};
+
+// Safely get a colour key that exists in EVENT_COLOURS
+function normaliseEventColour(key, fallback) {
+  if (key && EVENT_COLOURS[key]) return key;
+  return fallback;
+}
+
+// For the modal: set the currently selected colour
+function setEntryColour(key) {
+  key = normaliseEventColour(key, 'sky');
+  const hidden = document.getElementById('entry-colour');
+  if (hidden) hidden.value = key;
+
+  // Update swatch borders
+  const swatches = document.querySelectorAll('[data-entry-colour-swatch]');
+  swatches.forEach(btn => {
+    if (btn.dataset.colourKey === key) {
+      btn.classList.add('ring-2', 'ring-white');
+    } else {
+      btn.classList.remove('ring-2', 'ring-white');
+    }
+  });
 }
 
     function defaultFolders() {
@@ -1736,6 +1848,19 @@ reminders = storedReminders ? JSON.parse(storedReminders) : {};
 
 const storedEvents = localStorage.getItem('mydayevents');
 events = storedEvents ? JSON.parse(storedEvents) : {};
+
+// Give existing events & reminders a default colour if they do not have one yet
+Object.keys(events).forEach(dateIso => {
+  events[dateIso].forEach(ev => {
+    ev.colour = normaliseEventColour(ev.colour, 'sky');   // default sky for events
+  });
+});
+
+Object.keys(reminders).forEach(dateIso => {
+  reminders[dateIso].forEach(r => {
+    r.colour = normaliseEventColour(r.colour, 'violet');  // default violet for reminders
+  });
+});
 
 
 // Streak and last engagement date
@@ -4113,25 +4238,36 @@ function renderCalendar() {
     cells.push('<div class="h-9"></div>');
   }
 
-  // Calendar days
+    // Calendar days
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(calendarYear, calendarMonth, day);
     const iso  = localDateToIso(date);  // use local calendar date
 
-    const dayItems   = itemsByDate[iso] || [];
+        const dayItems   = itemsByDate[iso] || [];
     const hasHoliday = dayItems.some(item => item.kind === 'holiday');
 
     const hasItemsFromMap = dayItems.length > 0;
     const hasReminders    = !!(reminders[iso] && reminders[iso].length > 0);
 
-    // If you are already using getEventsForDate for recurring events, keep it:
+    // Use full event logic so recurring / multi‑day events are included
     const recurringEvents = typeof getEventsForDate === 'function'
       ? getEventsForDate(iso)
       : (events[iso] || []);
 
     const hasRecurringEvents = recurringEvents.length > 0;
+    const hasItems           = hasItemsFromMap || hasReminders || hasRecurringEvents;
 
-    const hasItems = hasItemsFromMap || hasReminders || hasRecurringEvents;
+    // Choose a day colour from events or reminders (if any)
+    let dayColourKey = null;
+    if (recurringEvents.length) {
+      // Use the colour of the first event on that day
+      dayColourKey = normaliseEventColour(recurringEvents[0].colour, 'sky');
+    } else if (hasReminders) {
+      // Otherwise use the colour of the first reminder
+      const firstReminder = reminders[iso][0];
+      dayColourKey = normaliseEventColour(firstReminder && firstReminder.colour, 'violet');
+    }
+
 
     const isToday    = iso === todayIso;
     const isSelected = iso === calendarSelectedIsoDate;
@@ -4139,27 +4275,46 @@ function renderCalendar() {
     let baseClasses =
       'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
 
+
     if (isSelected) {
-      // Selected day still looks like your normal selection
+      // Selected day wins over everything
       baseClasses += 'bg-lime-400 text-black font-semibold';
     } else if (isToday) {
+      // Today gets a lime outline
       baseClasses += 'border border-lime-300/70 text-lime-200';
     } else if (hasHoliday) {
-      // Holiday highlight (different from normal “has items”)
+      // Public holidays keep their rose highlight
       baseClasses += 'bg-rose-900/30 border border-rose-400/80 text-rose-50';
+    } else if (dayColourKey) {
+      // Day coloured by the first event/reminder colour
+      const cfg = EVENT_COLOURS[dayColourKey] || EVENT_COLOURS.sky;
+      baseClasses += ' ' + cfg.block + ' ';
     } else if (hasItems) {
+      // Other activity (tasks, journal, gratitude) - neutral highlight
       baseClasses += 'bg-white/10 border border-white/20';
     } else {
       baseClasses += 'text-white/50';
     }
 
-    // Dot: use a rose dot if it is a holiday, otherwise lime when there are items
+    // Dot at the bottom of the cell
     let dot = '';
     if (hasHoliday) {
       dot = '<span class="absolute bottom-1 w-2 h-2 rounded-full bg-rose-300"></span>';
+    } else if (dayColourKey) {
+      const dotClass = {
+        sky:    'bg-sky-300',
+        indigo: 'bg-indigo-300',
+        emerald:'bg-emerald-300',
+        amber:  'bg-amber-300',
+        rose:   'bg-rose-300',
+        violet: 'bg-violet-300'
+      }[dayColourKey] || 'bg-lime-300';
+
+      dot = `<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full ${dotClass}"></span>`;
     } else if (hasItems) {
       dot = '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>';
     }
+
 
     cells.push(`
       <button
@@ -4212,6 +4367,7 @@ function openCalendarEntryModal(mode) {
   const multidayBox     = document.getElementById('entry-multiday');
   const endDateWrapper  = document.getElementById('entry-end-date-wrapper');
   const endDateInput    = document.getElementById('entry-end-date');
+  const colourInput   = document.getElementById('entry-colour');
 
   if (!modal) return;
 
@@ -4227,6 +4383,10 @@ function openCalendarEntryModal(mode) {
       const arr = events[originalDateIso] || [];
       const ev  = arr.find(e => e.id === id);
       if (!ev) return;
+
+      // Set colour for this event
+      const colourKey = normaliseEventColour(ev.colour, 'sky');
+      setEntryColour(colourKey);
 
       titleEl.textContent    = 'Edit event';
       hintEl.textContent     = 'Update the details for this event.';
@@ -4263,10 +4423,14 @@ function openCalendarEntryModal(mode) {
       const r   = arr.find(x => x.id === id);
       if (!r) return;
 
+      const colourKey = normaliseEventColour(r.colour, 'violet');
+      setEntryColour(colourKey);
+
       titleEl.textContent    = 'Edit reminder';
       hintEl.textContent     = 'Update the details for this reminder.';
       startLabel.textContent = 'Time (optional)';
       titleLabel.textContent = 'Reminder text';
+
 
       if (repeatRow)    repeatRow.classList.add('hidden');
       if (notesWrapper) notesWrapper.classList.add('hidden');
@@ -4306,6 +4470,9 @@ function openCalendarEntryModal(mode) {
       if (notesWrapper) notesWrapper.classList.remove('hidden');
       if (repeatRow)    repeatRow.classList.remove('hidden');
       if (multidayRow)  multidayRow.classList.remove('hidden');
+
+      // Default event colour
+      setEntryColour('sky');
     } else {
       titleEl.textContent    = 'New reminder';
       hintEl.textContent     = 'Choose a date and (optionally) a time for your reminder.';
@@ -4316,8 +4483,12 @@ function openCalendarEntryModal(mode) {
       if (notesWrapper) notesWrapper.classList.add('hidden');
       if (repeatRow)    repeatRow.classList.add('hidden');
       if (multidayRow)  multidayRow.classList.add('hidden');
+
+      // Default reminder colour
+      setEntryColour('violet');
     }
   }
+
 
    // Show the modal using inline style so it always appears
   modal.style.display = 'flex';
@@ -4352,6 +4523,12 @@ function saveCalendarEntryFromModal() {
   const notes  = (notesArea ? notesArea.value : '').trim();
   const repeat = repeatSelect ? (repeatSelect.value || 'none') : 'none';
 
+  const colourInput = document.getElementById('entry-colour');
+  const colourKey   = normaliseEventColour(
+    colourInput ? colourInput.value : null,
+    calendarEntryMode === 'event' ? 'sky' : 'violet'
+  );
+
   // Multi‑day end date (events only)
   let endDateIso = null;
   if (
@@ -4364,7 +4541,6 @@ function saveCalendarEntryFromModal() {
     endDateIso = endDateInput.value.trim();
     if (endDateIso.length > 10) endDateIso = endDateIso.slice(0, 10);
 
-    // Simple safety check: only block if the string is clearly earlier
     if (endDateIso < dateIso) {
       alert('End date cannot be before the start date.');
       return;
@@ -4378,6 +4554,8 @@ function saveCalendarEntryFromModal() {
   }
 
   const isEditing = !!editingCalendarEntry;
+  // …keep the rest of your existing function body from here down…
+
 
   // ----------------- EVENT BRANCH -----------------
   if (calendarEntryMode === 'event') {
@@ -4401,13 +4579,14 @@ function saveCalendarEntryFromModal() {
           endDateIso: endDateIso || null
         });
       } else {
-      const ev = arr[idx];
-ev.start       = start || '';
-ev.end         = end || '';
-ev.title       = title || '(no title)';
-ev.notes       = notes;
-ev.repeat      = repeat;
-ev.endDateIso  = endDateIso || null;
+  const ev = arr[idx];
+      ev.start       = start || '';
+      ev.end         = end || '';
+      ev.title       = title || '(no title)';
+      ev.notes       = notes;
+      ev.repeat      = repeat;
+      ev.endDateIso  = endDateIso || null;
+      ev.colour      = colourKey;
 
 // Ensure we remember the true start date
 ev.startDateIso = ev.startDateIso || originalDateIso;
@@ -4422,18 +4601,20 @@ if (originalDateIso !== dateIso) {
 }
 
       }
-    } else {
+       } else {
       // New event
-events[dateIso].push({
-  id: 'ev_' + Date.now(),
-  start: start || '',
-  end: end || '',
-  title: title || '(no title)',
-  notes,
-  repeat,
-  endDateIso: endDateIso || null,
-  startDateIso: dateIso          // remember the starting day
-});
+      events[dateIso].push({
+        id: 'ev_' + Date.now(),
+        start: start || '',
+        end: end || '',
+        title: title || '(no title)',
+        notes,
+        repeat,
+        endDateIso: endDateIso || null,
+        startDateIso: dateIso,          // remember the starting day
+        colour: colourKey
+      });
+
 
     }
 
@@ -4449,14 +4630,18 @@ events[dateIso].push({
       if (idx === -1) {
         // Fallback: new reminder on chosen date
         reminders[dateIso].push({
-          id: 'rem_' + Date.now(),
-          time: start || '',
-          text: title || '(reminder)'
-        });
+        id: 'rem_' + Date.now(),
+        time: start || '',
+        text: title || '(reminder)',
+        colour: colourKey
+      });
+
       } else {
-        const r = arr[idx];
-        r.time = start || '';
-        r.text = title || '(reminder)';
+                const r = arr[idx];
+        r.time   = start || '';
+        r.text   = title || '(reminder)';
+        r.colour = colourKey;
+
 
         if (originalDateIso !== dateIso) {
           arr.splice(idx, 1);
@@ -4465,12 +4650,14 @@ events[dateIso].push({
         }
       }
     } else {
-      // New reminder
-      reminders[dateIso].push({
-        id: 'rem_' + Date.now(),
-        time: start || '',
-        text: title || '(reminder)'
-      });
+// New reminder
+reminders[dateIso].push({
+  id: 'rem_' + Date.now(),
+  time: start || '',
+  text: title || '(reminder)',
+  colour: colourKey
+});
+
     }
   }
 
@@ -5478,17 +5665,17 @@ window.onload = function () {
   renderFocusGoals();
   initReflectionAutoExpand();
 
-  buildAllTasksFolderOptions();
+ buildAllTasksFolderOptions();
 
-  // Initialise the new task boxes
+  const folderFilterSelect = document.getElementById('tasks-all-folder-filter');
+  if (folderFilterSelect) {
+    tasksAllFolderFilter = 'all';
+    folderFilterSelect.value = 'all';
+  }
+
   setTasksTodayFilter('outstanding');
   setTasksAllFilter('outstanding');
 };
-const folderFilterSelect = document.getElementById('tasks-all-folder-filter');
-if (folderFilterSelect) {
-  tasksAllFolderFilter = 'all';
-  folderFilterSelect.value = 'all';
-}
 
 
 
