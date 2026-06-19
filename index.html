@@ -1530,8 +1530,8 @@ function setEntryColour(key) {
 
 // ---------- Irish public holidays (next 50 years) ----------
 
-// Computus for Easter Sunday (Meeus/Jones/Butcher algorithm), then +1 day for Easter Monday
-function computeEasterMonday(year) {
+// Computus for Easter Sunday (Meeus/Jones/Butcher algorithm)
+function computeEasterSundayDate(year) {
   const a = year % 19;
   const b = Math.floor(year / 100);
   const c = year % 100;
@@ -1547,7 +1547,13 @@ function computeEasterMonday(year) {
   const month = Math.floor((h + l - 7 * m + 114) / 31); // 3 = March, 4 = April
   const day = ((h + l - 7 * m + 114) % 31) + 1;
 
-  const easterSunday = new Date(year, month - 1, day);
+  // Actual Easter Sunday date object (local time)
+  return new Date(year, month - 1, day);
+}
+
+// Easter Monday = Easter Sunday + 1 day
+function computeEasterMonday(year) {
+  const easterSunday = computeEasterSundayDate(year);
   const easterMonday = new Date(easterSunday.getTime() + 24 * 60 * 60 * 1000);
   return localDateToIso(easterMonday);
 }
@@ -1582,21 +1588,63 @@ function stBrigidsDayIso(year) {
   return firstMondayIso(year, 1); // February = 1
 }
 
-// Build holidays for a single year
-function buildIrishHolidaysForYear(year) {
-  return [
-    { date: `${year}-01-01`, title: "New Year’s Day" },
-    { date: stBrigidsDayIso(year), title: "St Brigid’s Day" },
-    { date: `${year}-03-17`, title: "St Patrick’s Day" },
-    { date: computeEasterMonday(year), title: "Easter Monday" },
-    { date: firstMondayIso(year, 4), title: "May Bank Holiday" },     // May
-    { date: firstMondayIso(year, 5), title: "June Bank Holiday" },    // June
-    { date: firstMondayIso(year, 7), title: "August Bank Holiday" },  // August
-    { date: lastMondayIso(year, 9), title: "October Bank Holiday" },  // October
-    { date: `${year}-12-25`, title: "Christmas Day" },
-    { date: `${year}-12-26`, title: "St Stephen’s Day" }
-  ];
+// Good Friday = 2 days before Easter Sunday
+function goodFridayIso(year) {
+  const easterSunday = computeEasterSundayDate(year);
+  const goodFriday = new Date(easterSunday.getTime() - 2 * 24 * 60 * 60 * 1000);
+  return localDateToIso(goodFriday);
 }
+
+// Mother’s Day (Mothering Sunday) = 3 weeks before Easter Sunday
+function mothersDayIso(year) {
+  const easterSunday = computeEasterSundayDate(year);
+  const motheringSunday = new Date(easterSunday.getTime() - 21 * 24 * 60 * 60 * 1000);
+  return localDateToIso(motheringSunday);
+}
+
+// Helper: third Sunday in a month (0 = Jan)
+function thirdSundayIso(year, monthIndex) {
+  const d = new Date(year, monthIndex, 1);
+  // Move forward to first Sunday
+  while (d.getDay() !== 0) { // 0 = Sunday
+    d.setDate(d.getDate() + 1);
+  }
+  // Third Sunday = first Sunday + 14 days
+  d.setDate(d.getDate() + 14);
+  return localDateToIso(d);
+}
+
+// Father’s Day = third Sunday in June
+function fathersDayIso(year) {
+  return thirdSundayIso(year, 5); // June = 5
+}
+
+// Build holidays / notable calendar days for a single year
+function buildIrishHolidaysForYear(year) {
+  const days = [
+    // Statutory / bank holidays
+    { date: `${year}-01-01`,        title: "New Year’s Day" },
+    { date: stBrigidsDayIso(year),  title: "St Brigid’s Day" },
+    { date: `${year}-03-17`,        title: "St Patrick’s Day" },
+    { date: computeEasterMonday(year), title: "Easter Monday" },
+    { date: firstMondayIso(year, 4),   title: "May Bank Holiday" },     // May
+    { date: firstMondayIso(year, 5),   title: "June Bank Holiday" },    // June
+    { date: firstMondayIso(year, 7),   title: "August Bank Holiday" },  // August
+    { date: lastMondayIso(year, 9),    title: "October Bank Holiday" }, // October
+    { date: `${year}-12-25`,        title: "Christmas Day" },
+    { date: `${year}-12-26`,        title: "St Stephen’s Day" },
+
+    // Other widely noted calendar days in Ireland
+    { date: `${year}-02-14`,        title: "Valentine’s Day" },
+    { date: goodFridayIso(year),    title: "Good Friday" },
+    { date: mothersDayIso(year),    title: "Mother’s Day" },
+    { date: fathersDayIso(year),    title: "Father’s Day" },
+    { date: `${year}-10-31`,        title: "Hallowe’en" }
+  ];
+
+  return days;
+}
+
 
 // Build holidays for the next 50 years starting from the current year
 const irishHolidays = (function () {
@@ -4019,7 +4067,7 @@ tasks.forEach(t => {
     addItem(h.date, {
       type: 'Holiday',
       kind: 'holiday',
-      label: 'Public holiday (Ireland)',
+            label: 'Holiday / notable day (Ireland)',
       text: h.title,
       colourClass: 'bg-rose-500/20 text-rose-100 border-rose-400/70'
     });
