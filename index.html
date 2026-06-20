@@ -1208,51 +1208,23 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
             <!-- hidden value used by JS -->
             <input type="hidden" id="entry-colour" value="sky">
 
-            <div class="flex flex-wrap gap-2 text-[11px]">
-              <button
-                type="button"
-                data-entry-colour-swatch
-                data-colour-key="sky"
-                onclick="setEntryColour('sky')"
-                class="w-7 h-7 rounded-full bg-sky-500/80 border border-white/40"
-              ></button>
-              <button
-                type="button"
-                data-entry-colour-swatch
-                data-colour-key="indigo"
-                onclick="setEntryColour('indigo')"
-                class="w-7 h-7 rounded-full bg-indigo-500/80 border border-white/40"
-              ></button>
-              <button
-                type="button"
-                data-entry-colour-swatch
-                data-colour-key="emerald"
-                onclick="setEntryColour('emerald')"
-                class="w-7 h-7 rounded-full bg-emerald-500/80 border border-white/40"
-              ></button>
-              <button
-                type="button"
-                data-entry-colour-swatch
-                data-colour-key="amber"
-                onclick="setEntryColour('amber')"
-                class="w-7 h-7 rounded-full bg-amber-400/90 border border-white/40"
-              ></button>
-              <button
-                type="button"
-                data-entry-colour-swatch
-                data-colour-key="rose"
-                onclick="setEntryColour('rose')"
-                class="w-7 h-7 rounded-full bg-rose-500/80 border border-white/40"
-              ></button>
-              <button
-                type="button"
-                data-entry-colour-swatch
-                data-colour-key="violet"
-                onclick="setEntryColour('violet')"
-                class="w-7 h-7 rounded-full bg-violet-500/80 border border-white/40"
-              ></button>
-            </div>
-          </div>
+             <div class="flex flex-wrap gap-2 text-[11px]">
+    <button type="button" data-entry-colour-swatch data-colour-key="sky"     onclick="setEntryColour('sky')"     class="w-7 h-7 rounded-full bg-sky-500/80     border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="indigo"  onclick="setEntryColour('indigo')"  class="w-7 h-7 rounded-full bg-indigo-500/80  border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="blue"    onclick="setEntryColour('blue')"    class="w-7 h-7 rounded-full bg-blue-500/80    border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="cyan"    onclick="setEntryColour('cyan')"    class="w-7 h-7 rounded-full bg-cyan-500/80    border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="teal"    onclick="setEntryColour('teal')"    class="w-7 h-7 rounded-full bg-teal-500/80    border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="emerald" onclick="setEntryColour('emerald')" class="w-7 h-7 rounded-full bg-emerald-500/80 border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="lime"    onclick="setEntryColour('lime')"    class="w-7 h-7 rounded-full bg-lime-500/80    border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="amber"   onclick="setEntryColour('amber')"   class="w-7 h-7 rounded-full bg-amber-400/90   border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="orange"  onclick="setEntryColour('orange')"  class="w-7 h-7 rounded-full bg-orange-500/80  border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="red"     onclick="setEntryColour('red')"     class="w-7 h-7 rounded-full bg-red-500/80     border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="rose"    onclick="setEntryColour('rose')"    class="w-7 h-7 rounded-full bg-rose-500/80    border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="pink"    onclick="setEntryColour('pink')"    class="w-7 h-7 rounded-full bg-pink-500/80    border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="violet"  onclick="setEntryColour('violet')"  class="w-7 h-7 rounded-full bg-violet-500/80  border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="purple"  onclick="setEntryColour('purple')"  class="w-7 h-7 rounded-full bg-purple-500/80  border border-white/40"></button>
+    <button type="button" data-entry-colour-swatch data-colour-key="slate"   onclick="setEntryColour('slate')"   class="w-7 h-7 rounded-full bg-slate-500/80   border border-white/40"></button>
+  </div>
 
 
         <button
@@ -1463,37 +1435,23 @@ function parseTimeToMinutes(timeStr) {
 // ---------------------------------------------------------------------------
 
 const EVENT_COLOURS = {
-  sky: {
-    name: 'Sky',
-    pill:  'bg-sky-500/20 text-sky-200 border-sky-400/60',
-    block: 'bg-sky-500/15 border-sky-400/70'
-  },
-  indigo: {
-    name: 'Indigo',
-    pill:  'bg-indigo-500/20 text-indigo-200 border-indigo-400/60',
-    block: 'bg-indigo-500/15 border-indigo-400/70'
-  },
-  emerald: {
-    name: 'Emerald',
-    pill:  'bg-emerald-500/20 text-emerald-200 border-emerald-400/60',
-    block: 'bg-emerald-500/15 border-emerald-400/70'
-  },
-  amber: {
-    name: 'Amber',
-    pill:  'bg-amber-500/20 text-amber-200 border-amber-400/60',
-    block: 'bg-amber-500/15 border-amber-400/70'
-  },
-  rose: {
-    name: 'Rose',
-    pill:  'bg-rose-500/20 text-rose-200 border-rose-400/60',
-    block: 'bg-rose-500/15 border-rose-400/70'
-  },
-  violet: {
-    name: 'Violet',
-    pill:  'bg-violet-500/20 text-violet-200 border-violet-400/60',
-    block: 'bg-violet-500/15 border-violet-400/70'
-  }
+  sky:     { name: 'Sky',       pill: 'bg-sky-500/20 text-sky-200 border-sky-400/60',       block: 'bg-sky-500/15 border-sky-400/70' },
+  indigo:  { name: 'Indigo',    pill: 'bg-indigo-500/20 text-indigo-200 border-indigo-400/60', block: 'bg-indigo-500/15 border-indigo-400/70' },
+  blue:    { name: 'Blue',      pill: 'bg-blue-500/20 text-blue-200 border-blue-400/60',    block: 'bg-blue-500/15 border-blue-400/70' },
+  cyan:    { name: 'Cyan',      pill: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/60',    block: 'bg-cyan-500/15 border-cyan-400/70' },
+  teal:    { name: 'Teal',      pill: 'bg-teal-500/20 text-teal-200 border-teal-400/60',    block: 'bg-teal-500/15 border-teal-400/70' },
+  emerald: { name: 'Emerald',   pill: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/60', block: 'bg-emerald-500/15 border-emerald-400/70' },
+  lime:    { name: 'Lime',      pill: 'bg-lime-500/20 text-lime-200 border-lime-400/60',    block: 'bg-lime-500/15 border-lime-400/70' },
+  amber:   { name: 'Amber',     pill: 'bg-amber-500/20 text-amber-200 border-amber-400/60', block: 'bg-amber-500/15 border-amber-400/70' },
+  orange:  { name: 'Orange',    pill: 'bg-orange-500/20 text-orange-200 border-orange-400/60', block: 'bg-orange-500/15 border-orange-400/70' },
+  red:     { name: 'Red',       pill: 'bg-red-500/20 text-red-200 border-red-400/60',       block: 'bg-red-500/15 border-red-400/70' },
+  rose:    { name: 'Rose',      pill: 'bg-rose-500/20 text-rose-200 border-rose-400/60',    block: 'bg-rose-500/15 border-rose-400/70' },
+  pink:    { name: 'Pink',      pill: 'bg-pink-500/20 text-pink-200 border-pink-400/60',    block: 'bg-pink-500/15 border-pink-400/70' },
+  violet:  { name: 'Violet',    pill: 'bg-violet-500/20 text-violet-200 border-violet-400/60', block: 'bg-violet-500/15 border-violet-400/70' },
+  purple:  { name: 'Purple',    pill: 'bg-purple-500/20 text-purple-200 border-purple-400/60', block: 'bg-purple-500/15 border-purple-400/70' },
+  slate:   { name: 'Slate',     pill: 'bg-slate-500/20 text-slate-200 border-slate-400/60', block: 'bg-slate-500/15 border-slate-400/70' }
 };
+
 
 // Safely get a colour key that exists in EVENT_COLOURS
 function normaliseEventColour(key, fallback) {
@@ -4286,18 +4244,17 @@ function renderCalendar() {
     cells.push('<div class="h-9"></div>');
   }
 
-    // Calendar days
+  // Calendar days
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(calendarYear, calendarMonth, day);
-    const iso  = localDateToIso(date);  // use local calendar date
+    const iso  = localDateToIso(date);  // local calendar date
 
-        const dayItems   = itemsByDate[iso] || [];
-    const hasHoliday = dayItems.some(item => item.kind === 'holiday');
-
+    const dayItems        = itemsByDate[iso] || [];
+    const hasHoliday      = dayItems.some(item => item.kind === 'holiday');
     const hasItemsFromMap = dayItems.length > 0;
     const hasReminders    = !!(reminders[iso] && reminders[iso].length > 0);
 
-    // Use full event logic so recurring / multi‑day events are included
+    // Include recurring / multi‑day events
     const recurringEvents = typeof getEventsForDate === 'function'
       ? getEventsForDate(iso)
       : (events[iso] || []);
@@ -4308,21 +4265,17 @@ function renderCalendar() {
     // Choose a day colour from events or reminders (if any)
     let dayColourKey = null;
     if (recurringEvents.length) {
-      // Use the colour of the first event on that day
       dayColourKey = normaliseEventColour(recurringEvents[0].colour, 'sky');
     } else if (hasReminders) {
-      // Otherwise use the colour of the first reminder
       const firstReminder = reminders[iso][0];
       dayColourKey = normaliseEventColour(firstReminder && firstReminder.colour, 'violet');
     }
-
 
     const isToday    = iso === todayIso;
     const isSelected = iso === calendarSelectedIsoDate;
 
     let baseClasses =
-      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colors ';
-
+      'h-9 flex items-center justify-center rounded-2xl cursor-pointer text-sm transition-colours ';
 
     if (isSelected) {
       // Selected day wins over everything
@@ -4331,14 +4284,14 @@ function renderCalendar() {
       // Today gets a lime outline
       baseClasses += 'border border-lime-300/70 text-lime-200';
     } else if (hasHoliday) {
-      // Public holidays keep their rose highlight
+      // Holidays keep a rose highlight
       baseClasses += 'bg-rose-900/30 border border-rose-400/80 text-rose-50';
     } else if (dayColourKey) {
-      // Day coloured by the first event/reminder colour
+      // Use the block style for this colour
       const cfg = EVENT_COLOURS[dayColourKey] || EVENT_COLOURS.sky;
       baseClasses += ' ' + cfg.block + ' ';
     } else if (hasItems) {
-      // Other activity (tasks, journal, gratitude) - neutral highlight
+      // Other activity (tasks, journal, gratitude) – neutral highlight
       baseClasses += 'bg-white/10 border border-white/20';
     } else {
       baseClasses += 'text-white/50';
@@ -4350,19 +4303,27 @@ function renderCalendar() {
       dot = '<span class="absolute bottom-1 w-2 h-2 rounded-full bg-rose-300"></span>';
     } else if (dayColourKey) {
       const dotClass = {
-        sky:    'bg-sky-300',
-        indigo: 'bg-indigo-300',
-        emerald:'bg-emerald-300',
-        amber:  'bg-amber-300',
-        rose:   'bg-rose-300',
-        violet: 'bg-violet-300'
+        sky:     'bg-sky-300',
+        indigo:  'bg-indigo-300',
+        blue:    'bg-blue-300',
+        cyan:    'bg-cyan-300',
+        teal:    'bg-teal-300',
+        emerald: 'bg-emerald-300',
+        lime:    'bg-lime-300',
+        amber:   'bg-amber-300',
+        orange:  'bg-orange-300',
+        red:     'bg-red-300',
+        rose:    'bg-rose-300',
+        pink:    'bg-pink-300',
+        violet:  'bg-violet-300',
+        purple:  'bg-purple-300',
+        slate:   'bg-slate-300'
       }[dayColourKey] || 'bg-lime-300';
 
       dot = `<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full ${dotClass}"></span>`;
     } else if (hasItems) {
       dot = '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-lime-300"></span>';
     }
-
 
     cells.push(`
       <button
@@ -4391,6 +4352,7 @@ function renderCalendar() {
     renderCalendarEntriesForSelectedDate();
   }
 }
+
 
 
 function openCalendarEntryModal(mode) {
