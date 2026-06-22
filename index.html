@@ -440,23 +440,34 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
         </div>
       </div>
 
-      <!-- Today overview -->
-      <div class="glass-card rounded-3xl p-7">
-        <h3 class="font-medium mb-4 flex justify-between items-center">
-          Today overview
-          <span class="text-xs text-white/60">Based on all folders</span>
-        </h3>
-        <div class="flex justify-between text-sm">
-          <div>
-            <div class="text-3xl font-semibold" id="home-tasks-left">0</div>
-            <div class="text-xs text-white/60 mt-1">Tasks outstanding</div>
-          </div>
-          <div>
-            <div class="text-3xl font-semibold text-lime-300" id="home-priorities-left">0</div>
-            <div class="text-xs text-white/60 mt-1">Priority tasks</div>
-          </div>
-        </div>
-      </div>
+<!-- Today overview -->
+<div class="glass-card rounded-3xl p-7">
+  <h3 class="font-medium mb-4 flex justify-between items-center">
+    Today overview
+    <span class="text-xs text-white/60">Based on all folders</span>
+  </h3>
+
+  <div class="grid grid-cols-3 gap-4 text-sm">
+    <!-- Outstanding -->
+    <div>
+      <div class="text-3xl font-semibold" id="home-tasks-left">0</div>
+      <div class="text-xs text-white/60 mt-1">Tasks outstanding</div>
+    </div>
+
+    <!-- Completed today -->
+    <div>
+      <div class="text-3xl font-semibold text-emerald-300" id="home-tasks-completed-today">0</div>
+      <div class="text-xs text-white/60 mt-1">Completed today</div>
+    </div>
+
+    <!-- Priority outstanding -->
+    <div>
+      <div class="text-3xl font-semibold text-lime-300" id="home-priorities-left">0</div>
+      <div class="text-xs text-white/60 mt-1">Priority tasks</div>
+    </div>
+  </div>
+</div>
+
 
           <!-- Daily reward -->
       <div class="glass-card rounded-3xl p-7">
@@ -2413,14 +2424,27 @@ function updateStats() {
 
 
 
-    function updateHomeStats() {
-      const outstanding = tasks.filter(t => !t.done).length;
-      const priorityOutstanding = tasks.filter(t => !t.done && t.priority).length;
-      const elTasks = document.getElementById('home-tasks-left');
-      const elPrio  = document.getElementById('home-priorities-left');
-      if (elTasks) elTasks.textContent = outstanding;
-      if (elPrio)  elPrio.textContent  = priorityOutstanding;
-    }
+  function updateHomeStats() {
+  const todayIso = todayStr();
+
+  // All folders
+  const outstanding = tasks.filter(t => !t.done).length;
+  const completedToday = tasks.filter(
+    t => t.done && t.completedIsoDate === todayIso
+  ).length;
+  const priorityOutstanding = tasks.filter(
+    t => !t.done && t.priority
+  ).length;
+
+  const elOutstanding = document.getElementById('home-tasks-left');
+  const elDoneToday   = document.getElementById('home-tasks-completed-today');
+  const elPriority    = document.getElementById('home-priorities-left');
+
+  if (elOutstanding) elOutstanding.textContent = outstanding;
+  if (elDoneToday)   elDoneToday.textContent   = completedToday;
+  if (elPriority)    elPriority.textContent    = priorityOutstanding;
+}
+
 
     function updateRewardUI() {
       const el = document.getElementById('reward-text-display');
