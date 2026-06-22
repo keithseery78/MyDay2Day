@@ -206,6 +206,25 @@ body.theme-light .bg-sky-500\/20 {
   border-color: #0ea5e9;
 }
 
+/* Light mode: Upcoming events & reminders widget on Home */
+body.theme-light #home-upcoming-list .text-white\/90,
+body.theme-light #home-upcoming-list .text-white\/80 {
+  /* Main titles */
+  color: #111827; /* very dark slate */
+}
+
+body.theme-light #home-upcoming-list .text-white\/70,
+body.theme-light #home-upcoming-list .text-white\/60,
+body.theme-light #home-upcoming-list .text-white\/50 {
+  /* Date + time + notes */
+  color: #374151; /* darker grey so it is clearly readable */
+}
+
+/* Make the coloured type pill text dark enough on the light card */
+body.theme-light #home-upcoming-list span.rounded-full {
+  color: #111827;  /* dark text inside the coloured pill */
+}
+
 
 /* Fix template modal contrast in light mode */
 body.theme-light #reflection-templates-modal {
@@ -243,6 +262,41 @@ body.theme-light #calendar-entry-modal .text-white\/60,
 body.theme-light #calendar-entry-modal .text-white\/70,
 body.theme-light #calendar-entry-modal .text-white\/80 {
   color: #e5e7eb;
+}
+
+/* Make calendar folders modal text higher contrast */
+#calendar-folders-modal {
+  color: #e5e7eb;               /* default light text inside the modal */
+}
+
+#calendar-folders-modal h3,
+#calendar-folders-modal label {
+  color: #f9fafb;               /* headings + labels = very light */
+}
+
+#calendar-folders-modal p,
+#calendar-folders-modal span,
+#calendar-folders-modal .text-[11px] {
+  color: #d1d5db;               /* body / hint text a bit brighter */
+}
+
+/* Make the Close and Clear buttons easier to read */
+#calendar-folders-modal button {
+  color: #e5e7eb;
+}
+
+#calendar-folders-modal button:hover {
+  color: #ffffff;
+}
+
+/* Stronger text for folder names in the list */
+#calendar-folders-modal #calendar-folders-list .text-xs.text-white\/90 {
+  color: #f9fafb;
+}
+
+/* Slightly brighter built‑in/colour line */
+#calendar-folders-modal #calendar-folders-list .text-\[10px\].text-white\/40 {
+  color: #d1d5db;
 }
 
     /* Fireworks overlay */
@@ -445,21 +499,43 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
         </p>
       </div>
 
-      <!-- Today’s Reminders -->
+            <!-- Upcoming events & reminders (combined) -->
       <div class="glass-card rounded-3xl p-7">
-        <h3 class="font-medium mb-2">Today’s reminders</h3>
-        <div id="today-reminders" class="space-y-2 text-sm">
-          <!-- Filled by renderTodayReminders() -->
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-medium">Upcoming events & reminders</h3>
+          <div class="text-[11px] text-white/60">From your calendar</div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-2 mb-3 text-[11px]">
+          <!-- Time range -->
+          <select
+            id="home-upcoming-range"
+            onchange="changeHomeUpcomingRange(this.value)"
+            class="bg-black/60 border border-white/20 rounded-2xl px-2 py-1"
+          >
+            <option value="today">Today</option>
+            <option value="7">Next 7 days</option>
+            <option value="14">Next 14 days</option>
+            <option value="30">Next 30 days</option>
+          </select>
+
+          <!-- Folder filter (calendar folders) -->
+          <select
+            id="home-upcoming-folder"
+            onchange="changeHomeUpcomingFolder(this.value)"
+            class="bg-black/60 border border-white/20 rounded-2xl px-2 py-1 max-w-[180px]"
+          >
+            <!-- Filled from JS -->
+          </select>
+        </div>
+
+        <!-- List -->
+        <div id="home-upcoming-list" class="space-y-2 text-sm">
+          <!-- Filled by renderHomeUpcoming() -->
         </div>
       </div>
 
-      <!-- Today’s Events -->
-      <div class="glass-card rounded-3xl p-7">
-        <h3 class="font-medium mb-2">Today’s events</h3>
-        <div id="today-events" class="space-y-2 text-sm">
-          <!-- Filled by renderTodayEvents() -->
-        </div>
-      </div>
 
 
       <!-- Most Important Tasks -->
@@ -963,57 +1039,55 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
   <div class="glass-card rounded-3xl p-6">
     <h2 class="text-2xl luxury-logo mb-1">Calendar</h2>
     <p class="text-xs text-white/70 mb-1">
-  The calendar is your long‑view of progress. Every dot is a day you showed up for yourself – by completing tasks, writing a journal entry or noting gratitude. Seeing these days together helps you notice patterns, not perfection, and reminds you how often you have kept going.
-</p>
-<p class="text-[11px] text-white/60 mb-4">
-  Tap a date to review what you did and wrote on that day, or use the filter to focus on tasks, completed work or reflections. Let this view encourage consistency over time, especially on days when your progress feels smaller than it really is.
-</p>
+      The calendar is your long‑view of progress. Every dot is a day you showed up for yourself – by completing tasks, writing a journal entry or noting gratitude. Seeing these days together helps you notice patterns, not perfection, and reminds you how often you have kept going.
+    </p>
+    <p class="text-[11px] text-white/60 mb-4">
+      Tap a date to review what you did and wrote on that day, or use the filter to focus on tasks, completed work or reflections. Let this view encourage consistency over time, especially on days when your progress feels smaller than it really is.
+    </p>
 
+    <!-- Month header -->
+    <div class="flex items-center justify-between mb-3 text-sm">
+      <button
+        class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
+        onclick="changeCalendarMonth(-1)"
+      >
+        ◀
+      </button>
 
-   <!-- Month header -->
-<div class="flex items-center justify-between mb-3 text-sm">
-  <button
-    class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
-    onclick="changeCalendarMonth(-1)"
-  >
-    ◀
-  </button>
+      <div id="calendar-month-label" class="font-medium"></div>
 
-  <div id="calendar-month-label" class="font-medium"></div>
+      <button
+        class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
+        onclick="changeCalendarMonth(1)"
+      >
+        ▶
+      </button>
+    </div>
 
-  <button
-    class="px-2 py-1 rounded-2xl border border-white/30 text-xs"
-    onclick="changeCalendarMonth(1)"
-  >
-    ▶
-  </button>
-</div>
-
-<!-- View mode toggle (separate from the arrows) -->
-<div class="flex gap-2 mb-2 text-[11px]">
-  <button
-    id="calendar-view-btn-day"
-    onclick="setCalendarViewMode('day')"
-    class="px-3 py-1.5 rounded-2xl border border-white/25 bg-black/40"
-  >
-    Day
-  </button>
-  <button
-    id="calendar-view-btn-week"
-    onclick="setCalendarViewMode('week')"
-    class="px-3 py-1.5 rounded-2xl border border-white/25 bg-black/40"
-  >
-    Week
-  </button>
-  <button
-    id="calendar-view-btn-month"
-    onclick="setCalendarViewMode('month')"
-    class="px-3 py-1.5 rounded-2xl border border-white/25 bg-lime-400 text-black"
-  >
-    Month
-  </button>
-</div>
-
+    <!-- View mode toggle -->
+    <div class="flex gap-2 mb-2 text-[11px]">
+      <button
+        id="calendar-view-btn-day"
+        onclick="setCalendarViewMode('day')"
+        class="px-3 py-1.5 rounded-2xl border border-white/25 bg-black/40"
+      >
+        Day
+      </button>
+      <button
+        id="calendar-view-btn-week"
+        onclick="setCalendarViewMode('week')"
+        class="px-3 py-1.5 rounded-2xl border border-white/25 bg-black/40"
+      >
+        Week
+      </button>
+      <button
+        id="calendar-view-btn-month"
+        onclick="setCalendarViewMode('month')"
+        class="px-3 py-1.5 rounded-2xl border border-white/25 bg-lime-400 text-black"
+      >
+        Month
+      </button>
+    </div>
 
     <!-- Weekdays -->
     <div class="grid grid-cols-7 text-[11px] text-white/60 mb-1">
@@ -1026,7 +1100,7 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
       <div class="text-center">Sun</div>
     </div>
 
-    <!-- Filter -->
+    <!-- Main filter -->
     <div class="flex justify-end mb-2">
       <select
         id="calendar-filter"
@@ -1042,10 +1116,30 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
       </select>
     </div>
 
-       <!-- Calendar days -->
+    <!-- Folder filter + manage button -->
+    <div class="flex justify-between items-center mb-2 text-[11px]">
+      <div class="flex items-center gap-2">
+        <span class="text-white/70">Folder</span>
+        <select
+          id="calendar-folder-filter"
+          onchange="setCalendarFolderFilter(this.value)"
+          class="bg-black/60 border border-white/20 rounded-2xl px-2 py-1 text-[11px]"
+        >
+          <!-- options filled by JS -->
+        </select>
+      </div>
+      <button
+        onclick="openCalendarFoldersModal()"
+        class="px-3 py-1.5 rounded-2xl border border-white/25 text-[11px]"
+      >
+        Manage folders
+      </button>
+    </div>
+
+    <!-- Calendar days grid -->
     <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4 text-sm"></div>
 
-           <!-- Selected date, + Reminder button & entries -->
+    <!-- Selected date + add buttons -->
     <div class="flex items-center justify-between mb-2 text-xs text-white/70">
       <div id="calendar-selected-date"></div>
       <div class="flex gap-2">
@@ -1064,202 +1158,312 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
       </div>
     </div>
 
-   <!-- Holiday banner (shown when selected date is a public holiday) -->
-    <div id="calendar-holiday-banner"
-         class="mb-2 text-xs rounded-2xl px-3 py-2 bg-rose-500/15 border border-rose-400/60 text-rose-100 hidden">
-    </div>
+    <!-- Holiday banner -->
+    <div
+      id="calendar-holiday-banner"
+      class="mb-2 text-xs rounded-2xl px-3 py-2 bg-rose-500/15 border border-rose-400/60 text-rose-100 hidden"
+    ></div>
 
     <!-- Month view entries list -->
-    <div id="calendar-view-month-entries"
-         class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1">
+    <div
+      id="calendar-view-month-entries"
+      class="space-y-3 text-sm max-h-[40vh] overflow-y-auto pr-1"
+    >
       <div id="calendar-entries"></div>
     </div>
 
     <!-- Day view timeline -->
-    <div id="calendar-view-day"
-         class="hidden space-y-1 text-xs max-h-[40vh] overflow-y-auto pr-1 border-t border-white/10 pt-2">
-      <!-- Filled by renderDayView() -->
-    </div>
+    <div
+      id="calendar-view-day"
+      class="hidden space-y-1 text-xs max-h-[40vh] overflow-y-auto pr-1 border-t border-white/10 pt-2"
+    ></div>
 
     <!-- Week view columns -->
-    <div id="calendar-view-week"
-         class="hidden text-xs max-h-[40vh] overflow-x-auto overflow-y-auto pr-1 border-t border-white/10 pt-2">
-      <!-- Filled by renderWeekView() -->
+    <div
+      id="calendar-view-week"
+      class="hidden text-xs max-h-[40vh] overflow-x-auto overflow-y-auto pr-1 border-t border-white/10 pt-2"
+    ></div>
+  </div> <!-- close glass-card -->
+</div>   <!-- close calendar-section -->
+
+
+<!-- CALENDAR ENTRY MODAL (EVENT / REMINDER) -->
+<div
+  id="calendar-entry-modal"
+  class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
+>
+  <!-- The card is limited in height and scrolls internally -->
+  <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4 max-h-[80vh] flex flex-col">
+    <!-- Header (always visible) -->
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="calendar-entry-title" class="text-sm font-medium">New event</h3>
+      <button
+        onclick="closeCalendarEntryModal()"
+        class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+      >
+        Close
+      </button>
     </div>
 
-    <!-- Calendar entry modal (event / reminder) -->
-    <div
-      id="calendar-entry-modal"
-      class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
-    >
-      <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 id="calendar-entry-title" class="text-sm font-medium">New event</h3>
-          <button
-            onclick="closeCalendarEntryModal()"
-            class="text-xs text-white/60 px-2 py-1 rounded-2xl border border-white/20"
+    <!-- Hint text -->
+    <div class="text-[11px] text-white/60 mb-2" id="calendar-entry-type-hint">
+      Create a calendar event with date and time.
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="space-y-3 text-xs overflow-y-auto pr-1">
+      <!-- Date -->
+      <div>
+        <label class="block mb-1 text-white/70">Date</label>
+        <input
+          id="entry-date"
+          type="date"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+        >
+      </div>
+
+      <!-- Time range (events) or single time (reminders) -->
+      <div id="entry-time-row" class="flex gap-2">
+        <div class="flex-1">
+          <label class="block mb-1 text-white/70" id="entry-start-label">Start time</label>
+          <input
+            id="entry-start"
+            type="time"
+            class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
           >
-            Close
+        </div>
+        <div class="flex-1" id="entry-end-wrapper">
+          <label class="block mb-1 text-white/70">End time (optional)</label>
+          <input
+            id="entry-end"
+            type="time"
+            class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+          >
+        </div>
+      </div>
+
+      <!-- Multi‑day toggle + end date (events only) -->
+      <div id="entry-multiday-row" class="space-y-2">
+        <label class="flex items-center justify-between text-white/70 text-[11px]">
+          <span>Multi‑day event</span>
+          <span class="flex items-center gap-2">
+            <span class="text-white/60 text-[10px]">Spans more than one day</span>
+            <input
+              id="entry-multiday"
+              type="checkbox"
+              class="accent-lime-400"
+            >
+          </span>
+        </label>
+
+        <div id="entry-end-date-wrapper" class="hidden">
+          <label class="block mb-1 text-white/70">Ends on</label>
+          <input
+            id="entry-end-date"
+            type="date"
+            class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+          >
+        </div>
+      </div>
+
+      <!-- Title / text -->
+      <div>
+        <label class="block mb-1 text-white/70" id="entry-title-label">Event title</label>
+        <input
+          id="entry-title"
+          type="text"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
+          placeholder="e.g. Deep work block, appointment, meeting"
+        >
+      </div>
+
+      <!-- Notes (events only) -->
+      <div id="entry-notes-wrapper">
+        <label class="block mb-1 text-white/70">Notes (optional)</label>
+        <textarea
+          id="entry-notes"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs h-20 resize-none"
+          placeholder="Details, location, or anything you want to remember."
+        ></textarea>
+      </div>
+
+      <!-- Repeat options (events only) -->
+      <div id="entry-repeat-row">
+        <label class="block mb-1 text-white/70">Repeat</label>
+        <select
+          id="entry-repeat"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+        >
+          <option value="none">Does not repeat</option>
+          <option value="daily">Every day</option>
+          <option value="weekdays">Every weekday (Mon–Fri)</option>
+          <option value="weekly">Every week</option>
+          <option value="fortnightly">Every 2 weeks</option>
+          <option value="monthly">Every month</option>
+          <option value="yearly">Every year</option>
+        </select>
+      </div>
+
+      <!-- Folder (events & reminders) -->
+      <div id="entry-folder-row" class="mt-2">
+        <label class="block mb-1 text-white/70">Folder</label>
+        <select
+          id="entry-folder"
+          class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+        >
+          <!-- options filled from JS -->
+        </select>
+      </div>
+
+      <!-- Colour (events & reminders) -->
+      <div id="entry-colour-row" class="mt-2">
+        <label class="block mb-1 text-white/70">Colour</label>
+        <input type="hidden" id="entry-colour" value="sky">
+
+        <div class="flex flex-wrap gap-2 text-[11px]">
+          <button type="button" data-entry-colour-swatch data-colour-key="sky"     onclick="setEntryColour('sky')"     class="w-7 h-7 rounded-full bg-sky-500/80     border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="indigo"  onclick="setEntryColour('indigo')"  class="w-7 h-7 rounded-full bg-indigo-500/80  border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="blue"    onclick="setEntryColour('blue')"    class="w-7 h-7 rounded-full bg-blue-500/80    border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="cyan"    onclick="setEntryColour('cyan')"    class="w-7 h-7 rounded-full bg-cyan-500/80    border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="teal"    onclick="setEntryColour('teal')"    class="w-7 h-7 rounded-full bg-teal-500/80    border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="emerald" onclick="setEntryColour('emerald')" class="w-7 h-7 rounded-full bg-emerald-500/80 border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="lime"    onclick="setEntryColour('lime')"    class="w-7 h-7 rounded-full bg-lime-500/80    border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="amber"   onclick="setEntryColour('amber')"   class="w-7 h-7 rounded-full bg-amber-400/90   border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="orange"  onclick="setEntryColour('orange')"  class="w-7 h-7 rounded-full bg-orange-500/80  border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="red"     onclick="setEntryColour('red')"     class="w-7 h-7 rounded-full bg-red-500/80     border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="rose"    onclick="setEntryColour('rose')"    class="w-7 h-7 rounded-full bg-rose-500/80    border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="pink"    onclick="setEntryColour('pink')"    class="w-7 h-7 rounded-full bg-pink-500/80    border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="violet"  onclick="setEntryColour('violet')"  class="w-7 h-7 rounded-full bg-violet-500/80  border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="purple"  onclick="setEntryColour('purple')"  class="w-7 h-7 rounded-full bg-purple-500/80  border border-white/40"></button>
+          <button type="button" data-entry-colour-swatch data-colour-key="slate"   onclick="setEntryColour('slate')"   class="w-7 h-7 rounded-full bg-slate-500/80   border border-white/40"></button>
+        </div>
+      </div>
+
+      <!-- Save button -->
+      <button
+        onclick="saveCalendarEntryFromModal()"
+        class="mt-4 w-full btn-gradient text-black font-semibold py-2.5 rounded-2xl text-sm"
+      >
+        Save
+      </button>
+    </div> <!-- end scrollable content -->
+  </div>
+</div>
+
+
+<!-- CALENDAR FOLDER MANAGEMENT MODAL -->
+<div
+  id="calendar-folders-modal"
+  class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50"
+>
+  <div class="max-w-sm w-[90%] bg-slate-900 rounded-3xl border border-white/15 p-4 max-h-[80vh] overflow-y-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h3 class="text-sm font-medium text-white/90">Calendar folders</h3>
+        <p class="text-[11px] text-white/70">
+          Create colour‑coded folders for your events and reminders.
+        </p>
+      </div>
+      <button
+        onclick="closeCalendarFoldersModal()"
+        class="text-xs text-white/80 px-2 py-1 rounded-2xl border border-white/30"
+      >
+        Close
+      </button>
+    </div>
+
+    <!-- Folder editor -->
+    <div class="mb-3 rounded-2xl bg-black/40 border border-white/10 p-3 text-xs">
+      <div class="mb-2 text-[11px] text-white/70">
+        <span id="calendar-folder-editor-title" class="font-medium">Add folder</span>
+      </div>
+
+      <div class="space-y-2">
+        <div>
+          <label class="block mb-1 text-white/80">Folder name</label>
+          <input
+            id="calendar-folder-name-input"
+            type="text"
+            class="w-full bg-black/60 border border-white/25 rounded-2xl px-3 py-2 text-xs text-white"
+            placeholder="e.g. Work, Personal, Bills"
+          >
+        </div>
+
+        <div>
+          <label class="block mb-1 text-white/80">Colour</label>
+          <input type="hidden" id="calendar-folder-colour" value="sky">
+          <div class="flex flex-wrap gap-2 mt-1">
+            <button type="button" data-calendar-folder-colour="sky"     onclick="setCalendarFolderColour('sky')"     class="w-7 h-7 rounded-full bg-sky-500/80     border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="indigo"  onclick="setCalendarFolderColour('indigo')"  class="w-7 h-7 rounded-full bg-indigo-500/80  border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="blue"    onclick="setCalendarFolderColour('blue')"    class="w-7 h-7 rounded-full bg-blue-500/80    border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="cyan"    onclick="setCalendarFolderColour('cyan')"    class="w-7 h-7 rounded-full bg-cyan-500/80    border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="teal"    onclick="setCalendarFolderColour('teal')"    class="w-7 h-7 rounded-full bg-teal-500/80    border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="emerald" onclick="setCalendarFolderColour('emerald')" class="w-7 h-7 rounded-full bg-emerald-500/80 border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="lime"    onclick="setCalendarFolderColour('lime')"    class="w-7 h-7 rounded-full bg-lime-500/80    border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="amber"   onclick="setCalendarFolderColour('amber')"   class="w-7 h-7 rounded-full bg-amber-400/90   border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="orange"  onclick="setCalendarFolderColour('orange')"  class="w-7 h-7 rounded-full bg-orange-500/80  border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="red"     onclick="setCalendarFolderColour('red')"     class="w-7 h-7 rounded-full bg-red-500/80     border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="rose"    onclick="setCalendarFolderColour('rose')"    class="w-7 h-7 rounded-full bg-rose-500/80    border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="pink"    onclick="setCalendarFolderColour('pink')"    class="w-7 h-7 rounded-full bg-pink-500/80    border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="violet"  onclick="setCalendarFolderColour('violet')"  class="w-7 h-7 rounded-full bg-violet-500/80  border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="purple"  onclick="setCalendarFolderColour('purple')"  class="w-7 h-7 rounded-full bg-purple-500/80  border border-white/40"></button>
+            <button type="button" data-calendar-folder-colour="slate"   onclick="setCalendarFolderColour('slate')"   class="w-7 h-7 rounded-full bg-slate-500/80   border border-white/40"></button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button
+            onclick="saveCalendarFolderFromModal()"
+            class="flex-1 btn-gradient text-slate-900 font-semibold py-2.5 rounded-2xl text-xs"
+          >
+            Save folder
+          </button>
+          <button
+            onclick="resetCalendarFolderEditor()"
+            class="px-3 py-2 rounded-2xl border border-white/25 text-[11px] text-white/80"
+          >
+            Clear
           </button>
         </div>
+      </div>
 
-        <div class="text-[11px] text-white/60 mb-2" id="calendar-entry-type-hint">
-          Create a calendar event with date and time.
+      <!-- Existing folders list -->
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] text-white/70">Your folders</span>
+          <span class="text-[10px] text-white/50">Tap Edit to change or Delete to remove</span>
         </div>
-
-        <div class="space-y-3 text-xs">
-          <!-- Date -->
-          <div>
-            <label class="block mb-1 text-white/70">Date</label>
-            <input
-              id="entry-date"
-              type="date"
-              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-            >
-          </div>
-
-          <!-- Time range (events) or single time (reminders) -->
-          <div id="entry-time-row" class="flex gap-2">
-            <div class="flex-1">
-              <label class="block mb-1 text-white/70" id="entry-start-label">Start time</label>
-              <input
-                id="entry-start"
-                type="time"
-                class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-              >
-            </div>
-            <div class="flex-1" id="entry-end-wrapper">
-              <label class="block mb-1 text-white/70">End time (optional)</label>
-              <input
-                id="entry-end"
-                type="time"
-                class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-              >
-            </div>
-          </div>
-
-          <!-- Multi‑day toggle + end date (events only) -->
-          <div id="entry-multiday-row" class="space-y-2">
-            <label class="flex items-center justify-between text-white/70 text-[11px]">
-              <span>Multi‑day event</span>
-              <span class="flex items-center gap-2">
-                <span class="text-white/60 text-[10px]">Spans more than one day</span>
-                <input
-                  id="entry-multiday"
-                  type="checkbox"
-                  class="accent-lime-400"
-                >
-              </span>
-            </label>
-
-            <div id="entry-end-date-wrapper" class="hidden">
-              <label class="block mb-1 text-white/70">Ends on</label>
-              <input
-                id="entry-end-date"
-                type="date"
-                class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-              >
-            </div>
-          </div>
-
-
-          <!-- Title / text -->
-          <div>
-            <label class="block mb-1 text-white/70" id="entry-title-label">Event title</label>
-            <input
-              id="entry-title"
-              type="text"
-              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2"
-              placeholder="e.g. Deep work block, appointment, meeting"
-            >
-          </div>
-
-          <!-- Notes (events only) -->
-          <div id="entry-notes-wrapper">
-            <label class="block mb-1 text-white/70">Notes (optional)</label>
-            <textarea
-              id="entry-notes"
-              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs h-20 resize-none"
-              placeholder="Details, location, or anything you want to remember."
-            ></textarea>
-          </div>
-
-                            <!-- Repeat options (events only) -->
-          <div id="entry-repeat-row">
-            <label class="block mb-1 text-white/70">Repeat</label>
-            <select
-              id="entry-repeat"
-              class="w-full bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
-            >
-              <option value="none">Does not repeat</option>
-              <option value="daily">Every day</option>
-              <option value="weekdays">Every weekday (Mon–Fri)</option>
-              <option value="weekly">Every week</option>
-              <option value="fortnightly">Every 2 weeks</option>
-              <option value="monthly">Every month</option>
-              <option value="yearly">Every year</option>
-            </select>
-          </div>
-
-          <!-- Colour (events & reminders) -->
-          <div id="entry-colour-row" class="mt-2">
-            <label class="block mb-1 text-white/70">Colour</label>
-
-            <!-- hidden value used by JS -->
-            <input type="hidden" id="entry-colour" value="sky">
-
-             <div class="flex flex-wrap gap-2 text-[11px]">
-    <button type="button" data-entry-colour-swatch data-colour-key="sky"     onclick="setEntryColour('sky')"     class="w-7 h-7 rounded-full bg-sky-500/80     border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="indigo"  onclick="setEntryColour('indigo')"  class="w-7 h-7 rounded-full bg-indigo-500/80  border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="blue"    onclick="setEntryColour('blue')"    class="w-7 h-7 rounded-full bg-blue-500/80    border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="cyan"    onclick="setEntryColour('cyan')"    class="w-7 h-7 rounded-full bg-cyan-500/80    border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="teal"    onclick="setEntryColour('teal')"    class="w-7 h-7 rounded-full bg-teal-500/80    border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="emerald" onclick="setEntryColour('emerald')" class="w-7 h-7 rounded-full bg-emerald-500/80 border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="lime"    onclick="setEntryColour('lime')"    class="w-7 h-7 rounded-full bg-lime-500/80    border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="amber"   onclick="setEntryColour('amber')"   class="w-7 h-7 rounded-full bg-amber-400/90   border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="orange"  onclick="setEntryColour('orange')"  class="w-7 h-7 rounded-full bg-orange-500/80  border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="red"     onclick="setEntryColour('red')"     class="w-7 h-7 rounded-full bg-red-500/80     border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="rose"    onclick="setEntryColour('rose')"    class="w-7 h-7 rounded-full bg-rose-500/80    border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="pink"    onclick="setEntryColour('pink')"    class="w-7 h-7 rounded-full bg-pink-500/80    border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="violet"  onclick="setEntryColour('violet')"  class="w-7 h-7 rounded-full bg-violet-500/80  border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="purple"  onclick="setEntryColour('purple')"  class="w-7 h-7 rounded-full bg-purple-500/80  border border-white/40"></button>
-    <button type="button" data-entry-colour-swatch data-colour-key="slate"   onclick="setEntryColour('slate')"   class="w-7 h-7 rounded-full bg-slate-500/80   border border-white/40"></button>
-  </div>
-
-
-        <button
-          onclick="saveCalendarEntryFromModal()"
-          class="mt-4 w-full btn-gradient text-black font-semibold py-2.5 rounded-2xl text-sm"
+        <div
+          id="calendar-folders-list"
+          class="max-h-56 overflow-y-auto space-y-2 text-xs"
         >
-          Save
-        </button>
+          <!-- Filled by renderCalendarFoldersModalList() -->
+        </div>
       </div>
     </div>
-
-  </div> <!-- close .glass-card -->
-</div>   <!-- close #calendar-section -->
-
-
+  </div>
+</div>
 
 <!-- SETTINGS TAB -->
 <div id="settings-section" class="section hidden max-w-md mx-auto p-4">
   <div class="space-y-6 pb-24">
+    <!-- Header -->
     <div class="flex items-baseline justify-between">
       <h2 class="text-2xl luxury-logo">Settings</h2>
       <span class="text-xs text-white/50">MyDay2Day</span>
     </div>
 
-    <!-- Personalisation -->
+    <!-- Appearance -->
     <div>
-      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Personalisation</h3>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Appearance</h3>
       <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10">
+        <!-- Theme -->
         <div class="flex items-center px-5 py-4">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-lime-300/80 to-emerald-500/70 flex items-center justify-center text-black">
+            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-slate-100/80 via-slate-300/70 to-slate-500/80 flex items-center justify-center text-slate-900">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M4 7h16M4 17h16" stroke-linecap="round"/>
-                <circle cx="9" cy="7" r="2"/>
-                <circle cx="15" cy="17" r="2"/>
+                <path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div>
@@ -1268,11 +1472,16 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
             </div>
           </div>
           <div class="ml-auto flex gap-2">
-            <button onclick="setTheme('dark')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">Dark</button>
-            <button onclick="setTheme('light')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">Light</button>
+            <button onclick="setTheme('dark')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">
+              Dark
+            </button>
+            <button onclick="setTheme('light')" class="px-3 py-1.5 text-xs rounded-2xl border border-white/25">
+              Light
+            </button>
           </div>
         </div>
 
+        <!-- Accent colour -->
         <div class="flex items-center px-5 py-4">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-300">
@@ -1291,28 +1500,229 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
             <button onclick="setAccent('sky')" class="w-6 h-6 rounded-full border-2 border-white/10 bg-sky-400"></button>
           </div>
         </div>
+
+        <!-- Larger text -->
+        <div class="flex items-center px-5 py-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-2xl bg-violet-500/15 flex items-center justify-center text-violet-300">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M4 18h16M6 18l6-12 6 12" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Bigger text</div>
+              <div class="text-xs text-white/60">Make headings and labels easier to read</div>
+            </div>
+          </div>
+          <div class="ml-auto">
+            <label class="inline-flex items-center cursor-pointer">
+              <input id="setting-large-text" type="checkbox" class="sr-only peer" onchange="toggleLargeTextSetting(this.checked)">
+              <span class="w-9 h-5 bg-slate-500/60 peer-checked:bg-lime-400 rounded-full flex items-center px-1 transition-colors">
+                <span class="w-3 h-3 bg-white rounded-full transform peer-checked:translate-x-4 transition-transform"></span>
+              </span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Goals -->
+    <!-- Goals & XP -->
     <div>
-      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Goals</h3>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Goals & XP</h3>
       <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10 text-sm">
+        <!-- Daily XP target -->
         <div class="flex items-center px-5 py-4 gap-4">
           <div class="flex-1">
             <div class="text-sm font-medium">Daily XP target</div>
             <div class="text-xs text-white/60">XP you aim to earn each day</div>
           </div>
-          <input id="setting-xp-target" type="number" class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center">
-          <button onclick="saveXpTarget()" class="px-3 py-2 text-[11px] rounded-2xl border border-white/30">Save</button>
+          <input
+            id="setting-xp-target"
+            type="number"
+            class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center"
+          >
+          <button
+            onclick="saveXpTarget()"
+            class="px-3 py-2 text-[11px] rounded-2xl border border-white/30"
+          >
+            Save
+          </button>
         </div>
+
+        <!-- Daily reward -->
         <div class="flex items-center px-5 py-4 gap-4">
           <div class="flex-1">
             <div class="text-sm font-medium">Daily reward</div>
             <div class="text-xs text-white/60">What you give yourself for hitting the XP target</div>
           </div>
-          <input id="setting-reward-text" type="text" class="flex-1 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs" placeholder="e.g. Watch an episode of my favourite show">
-          <button onclick="saveRewardText()" class="px-3 py-2 text-[11px] rounded-2xl border border-white/30">Save</button>
+          <input
+            id="setting-reward-text"
+            type="text"
+            class="flex-1 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+            placeholder="e.g. Watch an episode of my favourite show"
+          >
+          <button
+            onclick="saveRewardText()"
+            class="px-3 py-2 text-[11px] rounded-2xl border border-white/30"
+          >
+            Save
+          </button>
+        </div>
+
+        <!-- Default task XP -->
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Default task XP</div>
+            <div class="text-xs text-white/60">XP suggested when you add a new task</div>
+          </div>
+          <input
+            id="setting-task-default-xp"
+            type="number"
+            class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center"
+          >
+          <button
+            onclick="saveTaskDefaultXpFromSettings()"
+            class="px-3 py-2 text-[11px] rounded-2xl border border-white/30"
+          >
+            Save
+          </button>
+        </div>
+
+        <!-- Focus timer defaults -->
+        <div class="flex flex-col px-5 py-4 gap-3">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Focus timer default</div>
+            <div class="text-xs text-white/60">Starting length and XP for new focus sessions</div>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-20">Minutes</span>
+              <input
+                id="setting-focus-minutes"
+                type="number"
+                class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center"
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-20">XP reward</span>
+              <input
+                id="setting-focus-xp"
+                type="number"
+                class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center"
+              >
+            </div>
+            <button
+              onclick="saveFocusDefaultsFromSettings()"
+              class="ml-auto px-3 py-2 text-[11px] rounded-2xl border border-white/30"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+
+        <!-- Reflection XP default -->
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Reflection XP</div>
+            <div class="text-xs text-white/60">Default XP when you save a journal or gratitude entry</div>
+          </div>
+          <input
+            id="setting-reflection-default-xp"
+            type="number"
+            class="w-20 bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs text-center"
+          >
+          <button
+            onclick="saveReflectionDefaultXpFromSettings()"
+            class="px-3 py-2 text-[11px] rounded-2xl border border-white/30"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks & calendar -->
+    <div>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Tasks & calendar</h3>
+      <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10 text-sm">
+        <!-- Calendar default view -->
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Calendar default view</div>
+            <div class="text-xs text-white/60">How the calendar opens by default</div>
+          </div>
+          <select
+            id="setting-calendar-default-view"
+            onchange="saveCalendarDefaultViewFromSettings()"
+            class="bg-black/60 border border-white/20 rounded-2xl px-3 py-2 text-xs"
+          >
+            <option value="day">Day</option>
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+          </select>
+        </div>
+
+        <!-- Show completed tasks on calendar -->
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Show completed tasks on calendar</div>
+            <div class="text-xs text-white/60">Include “task completed” dots and entries</div>
+          </div>
+          <label class="inline-flex items-center cursor-pointer">
+            <input
+              id="setting-calendar-show-completed"
+              type="checkbox"
+              class="sr-only peer"
+              onchange="updateShowCompletedTasksOnCalendar(this.checked)"
+            >
+            <span class="w-9 h-5 bg-slate-500/60 peer-checked:bg-lime-400 rounded-full flex items-center px-1 transition-colors">
+              <span class="w-3 h-3 bg-white rounded-full transform peer-checked:translate-x-4 transition-transform"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Behaviour -->
+    <div>
+      <h3 class="text-xs uppercase tracking-[0.2em] text-white/50 mb-2">Behaviour</h3>
+      <div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/10 text-sm">
+        <!-- Celebrations -->
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Celebrations</div>
+            <div class="text-xs text-white/60">Show fireworks when you hit your XP target</div>
+          </div>
+          <label class="inline-flex items-center cursor-pointer">
+            <input
+              id="setting-celebrations"
+              type="checkbox"
+              class="sr-only peer"
+              onchange="updateCelebrationsSetting(this.checked)"
+            >
+            <span class="w-9 h-5 bg-slate-500/60 peer-checked:bg-lime-400 rounded-full flex items-center px-1 transition-colors">
+              <span class="w-3 h-3 bg-white rounded-full transform peer-checked:translate-x-4 transition-transform"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Alerts -->
+        <div class="flex items-center px-5 py-4 gap-4">
+          <div class="flex-1">
+            <div class="text-sm font-medium">Pop‑up alerts</div>
+            <div class="text-xs text-white/60">Show small alert messages for timers and saves</div>
+          </div>
+          <label class="inline-flex items-center cursor-pointer">
+            <input
+              id="setting-alerts"
+              type="checkbox"
+              class="sr-only peer"
+              onchange="updateAlertsSetting(this.checked)"
+            >
+            <span class="w-9 h-5 bg-slate-500/60 peer-checked:bg-lime-400 rounded-full flex items-center px-1 transition-colors">
+              <span class="w-3 h-3 bg-white rounded-full transform peer-checked:translate-x-4 transition-transform"></span>
+            </span>
+          </label>
         </div>
       </div>
     </div>
@@ -1334,11 +1744,14 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
               </div>
               <div>
                 <div class="text-sm font-medium text-red-200">Reset all data</div>
-                <div class="text-xs text-red-200/80">Clear XP, tasks, journals and gratitude on this device</div>
+                <div class="text-xs text-red-200/80">Clear XP, tasks, calendar and reflections on this device</div>
               </div>
             </div>
           </div>
-          <button onclick="resetAllData()" class="mt-3 self-start px-3 py-2 rounded-2xl border border-red-400/70 text-[11px] text-red-100">
+          <button
+            onclick="resetAllData()"
+            class="mt-3 self-start px-3 py-2 rounded-2xl border border-red-400/70 text-[11px] text-red-100"
+          >
             Reset now
           </button>
         </div>
@@ -1349,8 +1762,6 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
 </div>
 
 
-
-
   <script>
     // XP and streak state
     let xp = 0;               // total XP (lifetime)
@@ -1359,11 +1770,18 @@ body.theme-light #calendar-entry-modal .text-white\/80 {
     let xpTarget = 100;       // daily XP target
     let rewardText = "Reward yourself with something small when you hit your XP target.";
     let rewardShownDate = null; // date when fireworks were shown
-    
+    let defaultTaskXp = 10;                 // new: default XP for a new task
+let defaultCalendarStartView = 'month'; // new: default Calendar view
+let showCompletedTasksOnCalendar = true; // new: whether to show completed tasks on calendar
+let largeTextEnabled = false;          // for the Bigger text toggle
+
 
     let tasks = [];
     let folders = [];
     let currentFolderId = 'all'; // 'all' = all folders
+let calendarFolders = [];
+let editingCalendarFolderId = null;
+let currentCalendarFolderFilter = 'all';  // 'all' or a specific folderId
 
 
     let journalEntries = [];
@@ -1380,7 +1798,10 @@ let reminders = {};   // { "YYYY-MM-DD": [ { id, text } ] }
 let editingReflectionEntry = null; // { type: 'journal' | 'gratitude', id } or null
     let events = {};      // { "YYYY-MM-DD": [ { id, time, title, notes } ] }
     let calendarViewMode = 'month'; // 'day', 'week', or 'month'
+let homeUpcomingRange = 'today';  // 'today' | '7' | '14' | '30'
+let homeUpcomingFolder = 'all';   // 'all' or a calendar folder id
     
+
     let focusGoals = [];  // goals for the current focus session
     let calendarEntryMode = 'event'; // 'event' or 'reminder'
 let editingTaskIndex = null;   // null = new task, number = editing existing task
@@ -1411,6 +1832,15 @@ let tasksAllFolderFilter = 'all';     // <– add this line
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
     }
+
+// Add N days to a YYYY-MM-DD string and return a new YYYY-MM-DD string
+function addDays(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(n => parseInt(n, 10));
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  return localDateToIso(dt);
+}
+
 
 function localDateToIso(d) {
   const y = d.getFullYear();
@@ -1639,6 +2069,14 @@ const irishHolidays = (function () {
   ];
 }
 
+function getDefaultCalendarFolders() {
+  return [
+    { id: 'cal_general',   name: 'General',   colour: 'sky',    builtin: true },
+    { id: 'cal_birthdays', name: 'Birthdays', colour: 'rose',   builtin: true },
+    { id: 'cal_bills',     name: 'Bills',     colour: 'amber',  builtin: true },
+    { id: 'cal_appointments', name: 'Appointments', colour: 'emerald', builtin: true }
+  ];
+}
 
 function addFocusGoal() {
   const input = document.getElementById('focus-goal-input');
@@ -1868,6 +2306,17 @@ Object.keys(reminders).forEach(dateIso => {
   });
 });
 
+// Calendar folders
+const storedCalFolders = localStorage.getItem('myday_calendar_folders');
+if (storedCalFolders) {
+  calendarFolders = JSON.parse(storedCalFolders);
+} else {
+  calendarFolders = getDefaultCalendarFolders();
+}
+
+const storedCalFilter = localStorage.getItem('myday_calendar_folder_filter');
+currentCalendarFolderFilter = storedCalFilter || 'all';
+
 
 // Streak and last engagement date
 const storedStreak = localStorage.getItem('mydaystreak');
@@ -1904,10 +2353,11 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       }
 
 
-      updateStats();
+updateStats();
       renderFolders();
       renderTasks();
       renderCalendar();
+      renderCalendarFolderOptions();   // <-- add this line
       renderJournal();
       renderJournalTemplatesList();
       renderGratitude();
@@ -1946,6 +2396,8 @@ lastEngagementDate = localStorage.getItem('mydayengagementdate');
       localStorage.setItem('mydayaccent', accent);
       localStorage.setItem('mydayreminders', JSON.stringify(reminders));
       localStorage.setItem('mydayevents', JSON.stringify(events));
+localStorage.setItem('myday_calendar_folders', JSON.stringify(calendarFolders));
+localStorage.setItem('myday_calendar_folder_filter', currentCalendarFolderFilter);
 
     }
 
@@ -2407,14 +2859,13 @@ function promptRenameFolder() {
 // ---------- TASK MODAL ----------
 
 function openTaskModal(index) {
-    const modal      = document.getElementById('task-entry-modal');
-  const titleEl    = document.getElementById('task-modal-title');
-  const textInput  = document.getElementById('task-modal-text');
-  const dateInput  = document.getElementById('task-modal-date');
-  const xpInput    = document.getElementById('task-modal-xp');
-  const prioInput  = document.getElementById('task-modal-priority');
+  const modal        = document.getElementById('task-entry-modal');
+  const titleEl      = document.getElementById('task-modal-title');
+  const textInput    = document.getElementById('task-modal-text');
+  const dateInput    = document.getElementById('task-modal-date');
+  const xpInput      = document.getElementById('task-modal-xp');
+  const prioInput    = document.getElementById('task-modal-priority');
   const folderSelect = document.getElementById('task-modal-folder');
-
 
   if (!modal || !textInput || !xpInput || !prioInput || !folderSelect) return;
 
@@ -2428,12 +2879,16 @@ function openTaskModal(index) {
     folderSelect.appendChild(opt);
   });
 
-// "New task" mode
+  // NEW TASK
   if (index === null || typeof index === 'undefined') {
     editingTaskIndex = null;
     if (titleEl) titleEl.textContent = 'New task';
     textInput.value = '';
-    xpInput.value   = '10';
+
+    // Use setting‑driven default XP here
+    const xpDefault = typeof defaultTaskXp === 'number' && defaultTaskXp >= 0 ? defaultTaskXp : 10;
+    xpInput.value = String(xpDefault);
+
     prioInput.checked = false;
 
     // Default date = today
@@ -2445,15 +2900,16 @@ function openTaskModal(index) {
       fallbackFolder = folders[0]?.id || '';
     }
     folderSelect.value = fallbackFolder;
+
   } else {
-    // Editing existing task
+    // EDIT EXISTING TASK
     const task = tasks[index];
     if (!task) return;
     editingTaskIndex = index;
 
     if (titleEl) titleEl.textContent = 'Edit task';
-    textInput.value = task.text || '';
-    xpInput.value   = typeof task.xp === 'number' ? task.xp : 10;
+    textInput.value   = task.text || '';
+    xpInput.value     = typeof task.xp === 'number' ? task.xp : 10;
     prioInput.checked = !!task.priority;
 
     const folderId = task.folderId || 'inbox';
@@ -2465,12 +2921,12 @@ function openTaskModal(index) {
     }
   }
 
-
   modal.classList.remove('hidden');
   modal.classList.add('flex');
 
   setTimeout(() => textInput.focus(), 20);
 }
+
 
 function closeTaskModal() {
   const modal = document.getElementById('task-entry-modal');
@@ -3964,6 +4420,77 @@ function deleteGratitudeEntry(id) {
   renderGratitude();
 }
 
+// ---------- CALENDAR FOLDER HELPERS ----------
+
+// Populate both: the modal's folder select, the calendar filter,
+// and the Home "Upcoming" folder filter
+function renderCalendarFolderOptions() {
+  const modalSelect    = document.getElementById('entry-folder');
+  const filterSelect   = document.getElementById('calendar-folder-filter');
+  const homeSelect     = document.getElementById('home-upcoming-folder');
+
+  const options = calendarFolders.map(f => ({
+    id: f.id,
+    name: f.name
+  }));
+
+  // Modal select (entry-folder)
+  if (modalSelect) {
+    modalSelect.innerHTML = options.map(f => `
+      <option value="${f.id}">${f.name}</option>
+    `).join('');
+  }
+
+  // Calendar folder filter (calendar-folder-filter)
+  if (filterSelect) {
+    let html = '<option value="all">All folders</option>';
+    html += options.map(f => `
+      <option value="${f.id}">${f.name}</option>
+    `).join('');
+    filterSelect.innerHTML = html;
+
+    if (
+      currentCalendarFolderFilter !== 'all' &&
+      !calendarFolders.some(f => f.id === currentCalendarFolderFilter)
+    ) {
+      currentCalendarFolderFilter = 'all';
+    }
+    filterSelect.value = currentCalendarFolderFilter;
+  }
+
+  // Home upcoming folder filter
+  if (homeSelect) {
+    let html = '<option value="all">All folders</option>';
+    html += options.map(f => `
+      <option value="${f.id}">${f.name}</option>
+    `).join('');
+    homeSelect.innerHTML = html;
+
+    if (
+      homeUpcomingFolder !== 'all' &&
+      !calendarFolders.some(f => f.id === homeUpcomingFolder)
+    ) {
+      homeUpcomingFolder = 'all';
+    }
+    homeSelect.value = homeUpcomingFolder;
+  }
+}
+
+
+// Change current calendar folder filter
+function setCalendarFolderFilter(value) {
+  currentCalendarFolderFilter = value || 'all';
+  saveData();
+  renderCalendar();
+  renderCalendarEntriesForSelectedDate();
+  renderTodayReminders();
+  renderTodayEvents();
+}
+
+// Simple prompt-based management of calendar folders
+
+
+
 function buildCalendarItems() {
   const itemsByDate = {};
 
@@ -3994,10 +4521,12 @@ function buildCalendarItems() {
     });
   });
 
-    // Tasks: created + completed
-tasks.forEach(t => {
+  // Tasks: created + completed (completed items obey the setting)
+  tasks.forEach(t => {
     const createdDate   = t.createdIsoDate   || todayStr();
     const scheduledDate = t.scheduledIsoDate || createdDate;
+
+    // Task created
     addItem(scheduledDate, {
       type: 'Task',
       kind: 'task_created',
@@ -4007,7 +4536,8 @@ tasks.forEach(t => {
       colourClass: 'bg-sky-500/15 text-sky-200 border-sky-400/60'
     });
 
-    if (t.done && t.completedIsoDate) {
+    // Task completed (only if allowed)
+    if (showCompletedTasksOnCalendar && t.done && t.completedIsoDate) {
       addItem(t.completedIsoDate, {
         type: 'Task done',
         kind: 'task_done',
@@ -4019,18 +4549,16 @@ tasks.forEach(t => {
     }
   });
 
-  // >>> ADD THIS BLOCK HERE <<<
   // Irish public holidays (pre‑loaded)
   irishHolidays.forEach(h => {
     addItem(h.date, {
       type: 'Holiday',
       kind: 'holiday',
-            label: 'Holiday / notable day (Ireland)',
+      label: 'Holiday / notable day (Ireland)',
       text: h.title,
       colourClass: 'bg-rose-500/20 text-rose-100 border-rose-400/70'
     });
   });
-  // >>> END OF NEW BLOCK <<<
 
   return itemsByDate;
 }
@@ -4038,6 +4566,178 @@ tasks.forEach(t => {
 function changeCalendarFilter(value) {
   calendarFilter = value || 'all';
   renderCalendarEntriesForSelectedDate();
+}
+
+function setCalendarFolderFilter(value) {
+  currentCalendarFolderFilter = value || 'all';
+  saveData();
+  renderCalendar();
+  renderCalendarEntriesForSelectedDate();
+  renderTodayReminders();
+  renderTodayEvents();
+}
+
+function openCalendarFoldersModal() {
+  const modal = document.getElementById('calendar-folders-modal');
+  if (!modal) return;
+  editingCalendarFolderId = null;
+  resetCalendarFolderEditor();
+  renderCalendarFoldersModalList();
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeCalendarFoldersModal() {
+  const modal = document.getElementById('calendar-folders-modal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  editingCalendarFolderId = null;
+}
+
+// Highlight currently selected colour in the modal
+function setCalendarFolderColour(key) {
+  key = normaliseEventColour(key, 'sky');
+  const hidden = document.getElementById('calendar-folder-colour');
+  if (hidden) hidden.value = key;
+
+  const swatches = document.querySelectorAll('[data-calendar-folder-colour]');
+  swatches.forEach(btn => {
+    if (btn.getAttribute('data-calendar-folder-colour') === key) {
+      btn.classList.add('ring-2', 'ring-white');
+    } else {
+      btn.classList.remove('ring-2', 'ring-white');
+    }
+  });
+}
+
+function resetCalendarFolderEditor() {
+  const nameInput = document.getElementById('calendar-folder-name-input');
+  const titleEl   = document.getElementById('calendar-folder-editor-title');
+  if (nameInput) nameInput.value = '';
+  if (titleEl)   titleEl.textContent = 'Add folder';
+  editingCalendarFolderId = null;
+  setCalendarFolderColour('sky');
+}
+
+function saveCalendarFolderFromModal() {
+  const nameInput  = document.getElementById('calendar-folder-name-input');
+  const colourInput = document.getElementById('calendar-folder-colour');
+  if (!nameInput || !colourInput) return;
+
+  const name = (nameInput.value || '').trim();
+  if (!name) {
+    alert('Folder name cannot be empty.');
+    return;
+  }
+
+  const colourKey = normaliseEventColour(colourInput.value, 'sky');
+
+  if (editingCalendarFolderId) {
+    // Update existing
+    const folder = calendarFolders.find(f => f.id === editingCalendarFolderId);
+    if (!folder) {
+      editingCalendarFolderId = null;
+    } else {
+      folder.name   = name;
+      folder.colour = colourKey;
+    }
+  } else {
+    // Create new
+    const id = 'cf_' + Date.now();
+    calendarFolders.push({
+      id,
+      name,
+      colour: colourKey,
+      builtin: false
+    });
+  }
+
+  saveData();
+  renderCalendarFolderOptions();
+  renderCalendar();
+  renderTodayReminders();
+  renderTodayEvents();
+  renderCalendarFoldersModalList();
+  resetCalendarFolderEditor();
+}
+
+function renderCalendarFoldersModalList() {
+  const container = document.getElementById('calendar-folders-list');
+  if (!container) return;
+
+  if (!calendarFolders.length) {
+    container.innerHTML =
+      '<p class="text-white/50 text-[11px]">No calendar folders yet. Add your first one above.</p>';
+    return;
+  }
+
+  container.innerHTML = calendarFolders.map(f => {
+    const colourCfg = EVENT_COLOURS[normaliseEventColour(f.colour, 'sky')] || EVENT_COLOURS.sky;
+    return `
+      <div class="flex items-center justify-between bg-black/40 border border-white/10 rounded-2xl px-3 py-2">
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-4 rounded-full ${colourCfg.block} border"></span>
+          <div>
+            <div class="text-xs text-white/90">${f.name}</div>
+            <div class="text-[10px] text-white/40">
+              ${f.builtin ? 'Built‑in' : 'Custom'} · ${colourCfg.name}
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-1 text-[11px]">
+          <button
+            onclick="startEditCalendarFolder('${f.id}')"
+            class="px-2 py-1 rounded-2xl border border-white/25 text-white/70 hover:text-lime-300"
+          >
+            Edit
+          </button>
+          <button
+            onclick="deleteCalendarFolder('${f.id}')"
+            class="px-2 py-1 rounded-2xl border border-red-400/60 text-red-200"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+
+function startEditCalendarFolder(id) {
+  const folder = calendarFolders.find(f => f.id === id);
+  if (!folder) return;
+  editingCalendarFolderId = id;
+
+  const nameInput = document.getElementById('calendar-folder-name-input');
+  const titleEl   = document.getElementById('calendar-folder-editor-title');
+  if (nameInput) nameInput.value = folder.name || '';
+  if (titleEl)   titleEl.textContent = 'Edit folder';
+
+  setCalendarFolderColour(folder.colour || 'sky');
+}
+
+function deleteCalendarFolder(id) {
+  const folder = calendarFolders.find(f => f.id === id);
+  if (!folder) return;
+
+  if (!confirm(`Delete folder "${folder.name}"? Events and reminders keep their folder id but may no longer match a visible folder.`)) {
+    return;
+  }
+
+  calendarFolders = calendarFolders.filter(f => f.id !== id);
+
+  if (currentCalendarFolderFilter === id) {
+    currentCalendarFolderFilter = 'all';
+  }
+
+  saveData();
+  renderCalendarFolderOptions();
+  renderCalendar();
+  renderTodayReminders();
+  renderTodayEvents();
+  renderCalendarFoldersModalList();
 }
 
 function formatIsoToNice(iso) {
@@ -4249,27 +4949,54 @@ function renderCalendar() {
     const date = new Date(calendarYear, calendarMonth, day);
     const iso  = localDateToIso(date);  // local calendar date
 
-    const dayItems        = itemsByDate[iso] || [];
-    const hasHoliday      = dayItems.some(item => item.kind === 'holiday');
-    const hasItemsFromMap = dayItems.length > 0;
-    const hasReminders    = !!(reminders[iso] && reminders[iso].length > 0);
+            const dayItems   = itemsByDate[iso] || [];
+    const hasHoliday = dayItems.some(item => item.kind === 'holiday');
 
-    // Include recurring / multi‑day events
-    const recurringEvents = typeof getEventsForDate === 'function'
+    const hasItemsFromMap = dayItems.length > 0;
+
+    // All reminders & events for this date
+    const allReminders = reminders[iso] || [];
+    const allEvents    = typeof getEventsForDate === 'function'
       ? getEventsForDate(iso)
       : (events[iso] || []);
 
-    const hasRecurringEvents = recurringEvents.length > 0;
+    const folderFilterId = currentCalendarFolderFilter;
+
+    const filteredReminders = folderFilterId === 'all'
+      ? allReminders
+      : allReminders.filter(r => r.folderId === folderFilterId);
+
+    const filteredEvents = folderFilterId === 'all'
+      ? allEvents
+      : allEvents.filter(ev => ev.folderId === folderFilterId);
+
+    const hasReminders       = filteredReminders.length > 0;
+    const hasRecurringEvents = filteredEvents.length > 0;
     const hasItems           = hasItemsFromMap || hasReminders || hasRecurringEvents;
 
-    // Choose a day colour from events or reminders (if any)
+    // Choose a day colour from filtered events/reminders (if any)
     let dayColourKey = null;
-    if (recurringEvents.length) {
-      dayColourKey = normaliseEventColour(recurringEvents[0].colour, 'sky');
-    } else if (hasReminders) {
-      const firstReminder = reminders[iso][0];
-      dayColourKey = normaliseEventColour(firstReminder && firstReminder.colour, 'violet');
+    if (filteredEvents.length) {
+      const first = filteredEvents[0];
+      const folder = first.folderId
+        ? calendarFolders.find(f => f.id === first.folderId)
+        : null;
+      dayColourKey = normaliseEventColour(
+        folder ? folder.colour : first.colour,
+        'sky'
+      );
+    } else if (filteredReminders.length) {
+      const first = filteredReminders[0];
+      const folder = first.folderId
+        ? calendarFolders.find(f => f.id === first.folderId)
+        : null;
+      dayColourKey = normaliseEventColour(
+        folder ? folder.colour : first.colour,
+        'violet'
+      );
     }
+
+
 
     const isToday    = iso === todayIso;
     const isSelected = iso === calendarSelectedIsoDate;
@@ -4358,6 +5085,9 @@ function renderCalendar() {
 function openCalendarEntryModal(mode) {
   calendarEntryMode = mode === 'reminder' ? 'reminder' : 'event';
 
+  // Make sure folder dropdowns are up to date
+  renderCalendarFolderOptions();
+
   const modal      = document.getElementById('calendar-entry-modal');
   const titleEl    = document.getElementById('calendar-entry-title');
   const hintEl     = document.getElementById('calendar-entry-type-hint');
@@ -4366,6 +5096,7 @@ function openCalendarEntryModal(mode) {
   const endInput   = document.getElementById('entry-end');
   const titleInput = document.getElementById('entry-title');
   const notesArea  = document.getElementById('entry-notes');
+  const folderSelect = document.getElementById('entry-folder');
 
   const endWrapper      = document.getElementById('entry-end-wrapper');
   const notesWrapper    = document.getElementById('entry-notes-wrapper');
@@ -4377,7 +5108,6 @@ function openCalendarEntryModal(mode) {
   const multidayBox     = document.getElementById('entry-multiday');
   const endDateWrapper  = document.getElementById('entry-end-date-wrapper');
   const endDateInput    = document.getElementById('entry-end-date');
-  const colourInput   = document.getElementById('entry-colour');
 
   if (!modal) return;
 
@@ -4394,8 +5124,15 @@ function openCalendarEntryModal(mode) {
       const ev  = arr.find(e => e.id === id);
       if (!ev) return;
 
-      // Set colour for this event
-      const colourKey = normaliseEventColour(ev.colour, 'sky');
+      // Folder & colour from folder
+      let folderId = ev.folderId || (calendarFolders[0]?.id || '');
+      if (folderSelect) folderSelect.value = folderId;
+
+      const folder = calendarFolders.find(f => f.id === folderId);
+      const colourKey = normaliseEventColour(
+        (folder && folder.colour) || ev.colour,
+        'sky'
+      );
       setEntryColour(colourKey);
 
       titleEl.textContent    = 'Edit event';
@@ -4428,19 +5165,25 @@ function openCalendarEntryModal(mode) {
       }
 
     } else {
-      // reminder edit
+      // Reminder edit
       const arr = reminders[originalDateIso] || [];
       const r   = arr.find(x => x.id === id);
       if (!r) return;
 
-      const colourKey = normaliseEventColour(r.colour, 'violet');
+      let folderId = r.folderId || (calendarFolders[0]?.id || '');
+      if (folderSelect) folderSelect.value = folderId;
+
+      const folder = calendarFolders.find(f => f.id === folderId);
+      const colourKey = normaliseEventColour(
+        (folder && folder.colour) || r.colour,
+        'violet'
+      );
       setEntryColour(colourKey);
 
       titleEl.textContent    = 'Edit reminder';
       hintEl.textContent     = 'Update the details for this reminder.';
       startLabel.textContent = 'Time (optional)';
       titleLabel.textContent = 'Reminder text';
-
 
       if (repeatRow)    repeatRow.classList.add('hidden');
       if (notesWrapper) notesWrapper.classList.add('hidden');
@@ -4450,11 +5193,11 @@ function openCalendarEntryModal(mode) {
       startInput.value = r.time || '';
       endInput.value   = '';
       titleInput.value = r.text || '';
-      notesArea.value  = '';
+      if (notesArea) notesArea.value  = '';
     }
 
   } else {
-    // New entry – clear fields and set defaults
+    // New entry
     editingCalendarEntry = null;
 
     const iso = calendarSelectedIsoDate || todayStr();
@@ -4463,12 +5206,24 @@ function openCalendarEntryModal(mode) {
     startInput.value = '';
     endInput.value   = '';
     titleInput.value = '';
-    notesArea.value  = '';
+    if (notesArea) notesArea.value  = '';
 
     if (multidayBox)    multidayBox.checked = false;
     if (endDateInput)   endDateInput.value = '';
     if (endDateWrapper) endDateWrapper.classList.add('hidden');
     if (repeatSelect)   repeatSelect.value = 'none';
+
+    // Decide default folder
+    let defaultFolderId =
+      currentCalendarFolderFilter !== 'all'
+        ? currentCalendarFolderFilter
+        : (calendarFolders[0]?.id || '');
+
+    if (folderSelect) {
+      folderSelect.value = defaultFolderId;
+    }
+
+    const defaultFolder = calendarFolders.find(f => f.id === defaultFolderId);
 
     if (calendarEntryMode === 'event') {
       titleEl.textContent    = 'New event';
@@ -4481,8 +5236,11 @@ function openCalendarEntryModal(mode) {
       if (repeatRow)    repeatRow.classList.remove('hidden');
       if (multidayRow)  multidayRow.classList.remove('hidden');
 
-      // Default event colour
-      setEntryColour('sky');
+      const colourKey = normaliseEventColour(
+        (defaultFolder && defaultFolder.colour) || 'sky',
+        'sky'
+      );
+      setEntryColour(colourKey);
     } else {
       titleEl.textContent    = 'New reminder';
       hintEl.textContent     = 'Choose a date and (optionally) a time for your reminder.';
@@ -4494,19 +5252,21 @@ function openCalendarEntryModal(mode) {
       if (repeatRow)    repeatRow.classList.add('hidden');
       if (multidayRow)  multidayRow.classList.add('hidden');
 
-      // Default reminder colour
-      setEntryColour('violet');
+      const colourKey = normaliseEventColour(
+        (defaultFolder && defaultFolder.colour) || 'violet',
+        'violet'
+      );
+      setEntryColour(colourKey);
     }
   }
 
-
-   // Show the modal using inline style so it always appears
   modal.style.display = 'flex';
   modal.classList.remove('hidden');
   modal.classList.add('flex');
 
   setTimeout(() => titleInput && titleInput.focus(), 20);
 }
+
 
 
 
@@ -4519,6 +5279,7 @@ function saveCalendarEntryFromModal() {
   const multidayBox  = document.getElementById('entry-multiday');
   const endDateInput = document.getElementById('entry-end-date');
   const repeatSelect = document.getElementById('entry-repeat');
+  const folderSelect = document.getElementById('entry-folder');
 
   // Base date
   let dateIso = (dateInput.value || '').trim();
@@ -4533,9 +5294,22 @@ function saveCalendarEntryFromModal() {
   const notes  = (notesArea ? notesArea.value : '').trim();
   const repeat = repeatSelect ? (repeatSelect.value || 'none') : 'none';
 
-  const colourInput = document.getElementById('entry-colour');
-  const colourKey   = normaliseEventColour(
-    colourInput ? colourInput.value : null,
+  // Folder and colour are driven by folder
+  let folderId = folderSelect && folderSelect.value
+    ? folderSelect.value
+    : (calendarFolders[0]?.id || null);
+
+  const folder = folderId
+    ? calendarFolders.find(f => f.id === folderId)
+    : null;
+
+  const baseColourKey =
+    folder && folder.colour
+      ? folder.colour
+      : (calendarEntryMode === 'event' ? 'sky' : 'violet');
+
+  const colourKey = normaliseEventColour(
+    baseColourKey,
     calendarEntryMode === 'event' ? 'sky' : 'violet'
   );
 
@@ -4564,21 +5338,18 @@ function saveCalendarEntryFromModal() {
   }
 
   const isEditing = !!editingCalendarEntry;
-  // …keep the rest of your existing function body from here down…
-
 
   // ----------------- EVENT BRANCH -----------------
   if (calendarEntryMode === 'event') {
     if (!events[dateIso]) events[dateIso] = [];
 
     if (isEditing && editingCalendarEntry.mode === 'event') {
-      // Update existing event
       const { originalDateIso, id } = editingCalendarEntry;
       const arr = events[originalDateIso] || [];
       const idx = arr.findIndex(ev => ev.id === id);
 
       if (idx === -1) {
-        // Fallback: treat as new event on chosen date
+        // Treat as new event on chosen date
         events[dateIso].push({
           id: 'ev_' + Date.now(),
           start: start || '',
@@ -4586,32 +5357,33 @@ function saveCalendarEntryFromModal() {
           title: title || '(no title)',
           notes,
           repeat,
-          endDateIso: endDateIso || null
+          endDateIso: endDateIso || null,
+          startDateIso: dateIso,
+          folderId,
+          colour: colourKey
         });
       } else {
-  const ev = arr[idx];
-      ev.start       = start || '';
-      ev.end         = end || '';
-      ev.title       = title || '(no title)';
-      ev.notes       = notes;
-      ev.repeat      = repeat;
-      ev.endDateIso  = endDateIso || null;
-      ev.colour      = colourKey;
+        const ev = arr[idx];
+        ev.start       = start || '';
+        ev.end         = end || '';
+        ev.title       = title || '(no title)';
+        ev.notes       = notes;
+        ev.repeat      = repeat;
+        ev.endDateIso  = endDateIso || null;
+        ev.folderId    = folderId;
+        ev.colour      = colourKey;
+        ev.startDateIso = ev.startDateIso || originalDateIso;
 
-// Ensure we remember the true start date
-ev.startDateIso = ev.startDateIso || originalDateIso;
-
-
-      // If the date changed, move bucket and update start date
-if (originalDateIso !== dateIso) {
-  arr.splice(idx, 1);
-  if (arr.length === 0) delete events[originalDateIso];
-  ev.startDateIso = dateIso;
-  events[dateIso].push(ev);
-}
-
+        // If the date changed, move bucket and update start date
+        if (originalDateIso !== dateIso) {
+          arr.splice(idx, 1);
+          if (arr.length === 0) delete events[originalDateIso];
+          ev.startDateIso = dateIso;
+          if (!events[dateIso]) events[dateIso] = [];
+          events[dateIso].push(ev);
+        }
       }
-       } else {
+    } else {
       // New event
       events[dateIso].push({
         id: 'ev_' + Date.now(),
@@ -4621,11 +5393,10 @@ if (originalDateIso !== dateIso) {
         notes,
         repeat,
         endDateIso: endDateIso || null,
-        startDateIso: dateIso,          // remember the starting day
+        startDateIso: dateIso,
+        folderId,
         colour: colourKey
       });
-
-
     }
 
   // ----------------- REMINDER BRANCH -----------------
@@ -4638,20 +5409,19 @@ if (originalDateIso !== dateIso) {
       const idx = arr.findIndex(r => r.id === id);
 
       if (idx === -1) {
-        // Fallback: new reminder on chosen date
         reminders[dateIso].push({
-        id: 'rem_' + Date.now(),
-        time: start || '',
-        text: title || '(reminder)',
-        colour: colourKey
-      });
-
+          id: 'rem_' + Date.now(),
+          time: start || '',
+          text: title || '(reminder)',
+          folderId,
+          colour: colourKey
+        });
       } else {
-                const r = arr[idx];
-        r.time   = start || '';
-        r.text   = title || '(reminder)';
-        r.colour = colourKey;
-
+        const r = arr[idx];
+        r.time    = start || '';
+        r.text    = title || '(reminder)';
+        r.folderId = folderId;
+        r.colour   = colourKey;
 
         if (originalDateIso !== dateIso) {
           arr.splice(idx, 1);
@@ -4660,25 +5430,23 @@ if (originalDateIso !== dateIso) {
         }
       }
     } else {
-// New reminder
-reminders[dateIso].push({
-  id: 'rem_' + Date.now(),
-  time: start || '',
-  text: title || '(reminder)',
-  colour: colourKey
-});
-
+      // New reminder
+      reminders[dateIso].push({
+        id: 'rem_' + Date.now(),
+        time: start || '',
+        text: title || '(reminder)',
+        folderId,
+        colour: colourKey
+      });
     }
   }
 
   // Finalise
-    calendarSelectedIsoDate = dateIso;
+  calendarSelectedIsoDate = dateIso;
   editingCalendarEntry = null;
 
-  // Close the pop‑up *first* so it always disappears
   closeCalendarEntryModal();
 
-  // Then update and re‑render everything
   saveData();
   renderCalendar();
   renderCalendarEntriesForSelectedDate();
@@ -4884,6 +5652,118 @@ function renderTodayEvents() {
   }).join('<div class="h-2"></div>');
 }
 
+// ---------- HOME: UPCOMING EVENTS & REMINDERS ----------
+
+function changeHomeUpcomingRange(value) {
+  // value is "today", "7", "14" or "30"
+  homeUpcomingRange = value || 'today';
+  renderHomeUpcoming();
+}
+
+function changeHomeUpcomingFolder(value) {
+  homeUpcomingFolder = value || 'all';
+  renderHomeUpcoming();
+}
+
+function renderHomeUpcoming() {
+  const container = document.getElementById('home-upcoming-list');
+  if (!container) return;
+
+  const range = homeUpcomingRange === 'today'
+    ? 0
+    : parseInt(homeUpcomingRange, 10) || 0;
+
+  const startIso = todayStr();
+  const endIso = addDays(startIso, range);
+
+  const items = [];
+
+  // Step through each day in the chosen range
+  let currentIso = startIso;
+  while (currentIso <= endIso) {
+    // Reminders
+    const dayReminders = reminders[currentIso] || [];
+    dayReminders.forEach(r => {
+      if (homeUpcomingFolder !== 'all' && r.folderId !== homeUpcomingFolder) {
+        return;
+      }
+      items.push({
+        type: 'reminder',
+        dateIso: currentIso,
+        time: r.time || '',
+        title: r.text || '',
+        notes: '',
+        folderId: r.folderId || null,
+        colourKey: normaliseEventColour(r.colour || 'violet', 'violet')
+      });
+    });
+
+    // Events (including recurring) via helper
+    const dayEvents = getEventsForDate(currentIso);
+    dayEvents.forEach(ev => {
+      if (homeUpcomingFolder !== 'all' && ev.folderId !== homeUpcomingFolder) {
+        return;
+      }
+      items.push({
+        type: 'event',
+        dateIso: currentIso,
+        time: ev.start || ev.time || '',
+        end: ev.end || '',
+        title: ev.title || '',
+        notes: ev.notes || '',
+        folderId: ev.folderId || null,
+        colourKey: normaliseEventColour(ev.colour || 'sky', 'sky')
+      });
+    });
+
+    currentIso = addDays(currentIso, 1);
+  }
+
+  if (!items.length) {
+    container.innerHTML =
+      '<p class="text-xs text-white/60">No upcoming events or reminders in this view.</p>';
+    return;
+  }
+
+  // Sort by date then time
+  items.sort((a, b) => {
+    if (a.dateIso < b.dateIso) return -1;
+    if (a.dateIso > b.dateIso) return 1;
+    const ta = parseTimeToMinutes(a.time) ?? 0;
+    const tb = parseTimeToMinutes(b.time) ?? 0;
+    return ta - tb;
+  });
+
+  // Render
+  container.innerHTML = items.map(item => {
+    const cfg = EVENT_COLOURS[item.colourKey] || EVENT_COLOURS.sky;
+    const typeLabel = item.type === 'event' ? 'Event' : 'Reminder';
+    const niceDate = formatIsoToNice(item.dateIso);
+    const timeLabel = item.time
+      ? `${item.time}${item.end ? '–' + item.end : ''}`
+      : '';
+
+    return `
+      <div class="flex items-start gap-3">
+        <span class="mt-0.5 px-2 py-0.5 rounded-full border text-[10px] ${cfg.pill}">
+          ${typeLabel}
+        </span>
+        <div class="flex-1">
+          <div class="text-[11px] text-white/60">
+            ${niceDate}${timeLabel ? ' · ' + timeLabel : ''}
+          </div>
+          <div class="text-sm text-white/90">
+            ${item.title || '(no title)'}
+          </div>
+          ${item.notes
+            ? `<div class="text-[11px] text-white/60 mt-0.5 whitespace-pre-line">${item.notes}</div>`
+            : ''
+          }
+        </div>
+      </div>
+    `;
+  }).join('<div class="h-2"></div>');
+}
 
 
 function renderCalendarEntriesForSelectedDate() {
@@ -5639,28 +6519,177 @@ function saveGratitudeEntryWithCustomXP(xpAmount) {
       if (navBtn) navBtn.classList.add('nav-active');
     }
 
-// Show / hide end date when multi‑day checkbox changes
-document.addEventListener('change', function (e) {
-  if (e.target && e.target.id === 'entry-multiday') {
-    const wrapper = document.getElementById('entry-end-date-wrapper');
-    if (!wrapper) return;
-    if (e.target.checked) wrapper.classList.remove('hidden');
-    else wrapper.classList.add('hidden');
+// ---------------- SETTINGS HELPERS (new) ----------------
+
+// Larger text mode
+function toggleLargeTextMode(isOn) {
+  const body = document.body;
+  if (isOn) {
+    body.classList.add('text-large');
+  } else {
+    body.classList.remove('text-large');
   }
-});
+  largeTextEnabled = !!isOn;
+  localStorage.setItem('myday_large_text', largeTextEnabled ? 'true' : 'false');
+}
+
+function toggleLargeTextSetting(checked) {
+  toggleLargeTextMode(checked);
+}
+
+// Focus timer defaults
+function saveFocusDefaultsFromSettings() {
+  const minInput = document.getElementById('setting-focus-minutes');
+  const xpInput  = document.getElementById('setting-focus-xp');
+  if (!minInput || !xpInput) return;
+
+  const mins = parseInt(minInput.value, 10) || 25;
+  const xp   = parseInt(xpInput.value, 10) || mins;
+
+  defaultFocusMinutes = mins;
+  localStorage.setItem('myday_focus_minutes', String(mins));
+
+  const focusMinutesInput = document.getElementById('custom-minutes');
+  const focusXpInput      = document.getElementById('focus-xp');
+  if (focusMinutesInput) focusMinutesInput.value = mins;
+  if (focusXpInput)      focusXpInput.value      = xp;
+
+  // Keep XP for the timer in sync
+  localStorage.setItem('myday_focus_xp_default', String(xp));
+}
+
+// Reflections XP default
+function saveReflectionDefaultXpFromSettings() {
+  const xpInput = document.getElementById('setting-reflection-default-xp');
+  if (!xpInput) return;
+  const xpVal = parseInt(xpInput.value, 10);
+  const safe  = !xpVal || xpVal < 0 ? 0 : xpVal;
+
+  // Store and update the editor input
+  localStorage.setItem('myday_reflection_default_xp', String(safe));
+  const field = document.getElementById('reflection-xp');
+  if (field) field.value = safe;
+}
+
+// Celebrations toggle
+function updateCelebrationsSetting(isOn) {
+  celebrationsEnabled = !!isOn;
+  localStorage.setItem('myday_celebrations_enabled', celebrationsEnabled ? 'true' : 'false');
+}
+
+// Alerts toggle
+function updateAlertsSetting(isOn) {
+  enableAlerts = !!isOn;
+  localStorage.setItem('myday_alerts_enabled', enableAlerts ? 'true' : 'false');
+}
+
+// Default task XP
+function saveTaskDefaultXpFromSettings() {
+  const input = document.getElementById('setting-task-default-xp');
+  if (!input) return;
+  const val = parseInt(input.value, 10);
+  const safe = !val || val < 0 ? 0 : val;
+  defaultTaskXp = safe;
+  localStorage.setItem('myday_default_task_xp', String(safe));
+}
+
+// Calendar default view
+function saveCalendarDefaultViewFromSettings() {
+  const select = document.getElementById('setting-calendar-default-view');
+  if (!select) return;
+  const value = select.value === 'day' || select.value === 'week' ? select.value : 'month';
+  defaultCalendarStartView = value;
+  localStorage.setItem('myday_calendar_default_view', defaultCalendarStartView);
+}
+
+// Show / hide completed tasks on calendar
+function updateShowCompletedTasksOnCalendar(isOn) {
+  showCompletedTasksOnCalendar = !!isOn;
+  localStorage.setItem('myday_calendar_show_completed_tasks', showCompletedTasksOnCalendar ? 'true' : 'false');
+  renderCalendar();                 // refresh dots
+  renderCalendarEntriesForSelectedDate();
+}
+
+// Read settings from localStorage and sync the UI
+function initSettingsUI() {
+  // Large text
+  const storedLarge = localStorage.getItem('myday_large_text');
+  largeTextEnabled  = storedLarge === 'true';
+  toggleLargeTextMode(largeTextEnabled);
+  const largeToggle = document.getElementById('setting-large-text');
+  if (largeToggle) largeToggle.checked = largeTextEnabled;
+
+  // Daily XP target & reward
+  const xpTargetInput = document.getElementById('setting-xp-target');
+  const rewardInput   = document.getElementById('setting-reward-text');
+  if (xpTargetInput) xpTargetInput.value = xpTarget;
+  if (rewardInput)   rewardInput.value   = rewardText;
+
+  // Default task XP
+  const storedTaskXp = localStorage.getItem('myday_default_task_xp');
+  if (storedTaskXp !== null) {
+    const v = parseInt(storedTaskXp, 10);
+    if (!isNaN(v)) defaultTaskXp = v;
+  }
+  const taskXpInput = document.getElementById('setting-task-default-xp');
+  if (taskXpInput) taskXpInput.value = defaultTaskXp;
+
+  // Focus timer defaults
+  const storedFocusMinutes = localStorage.getItem('myday_focus_minutes');
+  const storedFocusXp      = localStorage.getItem('myday_focus_xp_default');
+  const focusMinutesVal    = storedFocusMinutes ? parseInt(storedFocusMinutes, 10) : defaultFocusMinutes;
+  const focusXpVal         = storedFocusXp ? parseInt(storedFocusXp, 10) : focusMinutesVal;
+
+  const focusMinutesSetting = document.getElementById('setting-focus-minutes');
+  const focusXpSetting      = document.getElementById('setting-focus-xp');
+  if (focusMinutesSetting) focusMinutesSetting.value = focusMinutesVal;
+  if (focusXpSetting)      focusXpSetting.value      = focusXpVal;
+
+  // Reflection XP default
+  const storedReflectionXp = localStorage.getItem('myday_reflection_default_xp');
+  const reflectionDefault  = storedReflectionXp ? parseInt(storedReflectionXp, 10) : 10;
+  const reflectionSetting  = document.getElementById('setting-reflection-default-xp');
+  if (reflectionSetting) reflectionSetting.value = reflectionDefault;
+  const reflectionXpField = document.getElementById('reflection-xp');
+  if (reflectionXpField) reflectionXpField.value = reflectionDefault;
+
+  // Celebrations & alerts
+  const celebrationsToggle = document.getElementById('setting-celebrations');
+  const alertsToggle       = document.getElementById('setting-alerts');
+  if (celebrationsToggle) celebrationsToggle.checked = celebrationsEnabled;
+  if (alertsToggle)       alertsToggle.checked       = enableAlerts;
+
+  // Calendar default view
+  const storedCalView = localStorage.getItem('myday_calendar_default_view');
+  if (storedCalView === 'day' || storedCalView === 'week' || storedCalView === 'month') {
+    defaultCalendarStartView = storedCalView;
+  }
+  const calViewSelect = document.getElementById('setting-calendar-default-view');
+  if (calViewSelect) calViewSelect.value = defaultCalendarStartView;
+
+  // Show completed tasks on calendar
+  const storedShowCompleted = localStorage.getItem('myday_calendar_show_completed_tasks');
+  showCompletedTasksOnCalendar = storedShowCompleted === null ? true : storedShowCompleted === 'true';
+  const showCompletedToggle = document.getElementById('setting-calendar-show-completed');
+  if (showCompletedToggle) showCompletedToggle.checked = showCompletedTasksOnCalendar;
+}
+
 
 
     // Initial load
 window.onload = function () {
   loadData();
+ initSettingsUI();   // <--- add this line
   updateGreeting();
   setDailyQuote();
   setDailyInsight();
   setDailyReflectionTip();
-  renderTodayReminders();
+    renderTodayReminders();
   renderTodayEvents();
+  renderHomeUpcoming();   // <— add this line
   showSection('today');
-  setCalendarViewMode('month');
+  setCalendarViewMode(defaultCalendarStartView || 'month');
+
 
   const xpTargetInput = document.getElementById('setting-xp-target');
   const rewardInput   = document.getElementById('setting-reward-text');
